@@ -239,12 +239,37 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             display: none;
         }
+
+        /* Estilos para el modal de admin */
+        #adminAuthModal .modal-content {
+            background-color: var(--blanco);
+            padding: 2rem;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #adminAuthForm {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #adminAuthForm button[type="submit"] {
+            background-color: var(--azul);
+            color: white;
+        }
+
+        #cancelAdminAuth {
+            background-color: #ccc;
+            color: var(--negro);
+        }
     </style>
 </head>
 <body>
     <header>
         <h1>GranRetto Inventarios</h1>
-        <button class="user-toggle" id="userToggle">Modo Usuario</button>
+        <button class="user-toggle" id="userToggle">Cambiar a Admin</button>
     </header>
     
     <div class="tabs">
@@ -336,13 +361,14 @@
         </div>
     </div>
     
-    <!-- Modal de autenticación -->
-    <div class="modal" id="authModal">
+    <!-- Modal para autenticación de admin -->
+    <div class="modal" id="adminAuthModal">
         <div class="modal-content">
-            <h3 class="modal-title">Ingrese la contraseña</h3>
-            <form class="modal-form" id="authForm">
-                <input type="password" id="authPassword" placeholder="Contraseña" required>
+            <h3 class="modal-title">Contraseña de Admin</h3>
+            <form class="modal-form" id="adminAuthForm">
+                <input type="password" id="adminPassword" placeholder="Contraseña" required>
                 <button type="submit">Acceder</button>
+                <button type="button" id="cancelAdminAuth">Cancelar</button>
             </form>
         </div>
     </div>
@@ -385,7 +411,7 @@
         const eventListModal = document.getElementById('eventListModal');
         const addToEventModal = document.getElementById('addToEventModal');
         const noteModal = document.getElementById('noteModal');
-        const authModal = document.getElementById('authModal');
+        const adminAuthModal = document.getElementById('adminAuthModal');
         const installBtn = document.getElementById('installBtn');
         
         // Event Listeners
@@ -404,71 +430,58 @@
         document.getElementById('eventListForm').addEventListener('submit', saveEventList);
         document.getElementById('addToEventForm').addEventListener('submit', addItemToEventList);
         document.getElementById('noteForm').addEventListener('submit', saveNote);
-        document.getElementById('authForm').addEventListener('submit', authenticate);
+        document.getElementById('adminAuthForm').addEventListener('submit', authenticateAdmin);
+        document.getElementById('cancelAdminAuth').addEventListener('click', () => adminAuthModal.style.display = 'none');
         installBtn.addEventListener('click', installPWA);
-        
-        // Evento para instalar PWA
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
         
         // Funciones
         function initApp() {
-            authModal.style.display = 'flex';
+            // Iniciar directamente como usuario
+            isAdmin = false;
+            userToggle.textContent = 'Cambiar a Admin';
+            updateUIForUser();
             loadData();
         }
         
-        function authenticate(e) {
+        function authenticateAdmin(e) {
             e.preventDefault();
-            const password = document.getElementById('authPassword').value;
+            const password = document.getElementById('adminPassword').value;
             
             if (password === 'GranRetto') {
                 isAdmin = true;
-                userToggle.textContent = 'Modo Admin';
-                authModal.style.display = 'none';
+                userToggle.textContent = 'Cambiar a Usuario';
+                adminAuthModal.style.display = 'none';
                 updateUIForAdmin();
             } else {
-                isAdmin = false;
-                userToggle.textContent = 'Modo Usuario';
-                authModal.style.display = 'none';
-                updateUIForUser();
+                alert('Contraseña incorrecta');
             }
         }
         
         function toggleUserMode() {
-            authModal.style.display = 'flex';
-            document.getElementById('authPassword').value = '';
-            document.getElementById('authPassword').focus();
-            
-            // Resetear el formulario de autenticación
-            const authForm = document.getElementById('authForm');
-            authForm.onsubmit = authenticate;
+            if (isAdmin) {
+                // Si ya es admin, cambiar a usuario
+                isAdmin = false;
+                userToggle.textContent = 'Cambiar a Admin';
+                updateUIForUser();
+            } else {
+                // Si es usuario, pedir contraseña para cambiar a admin
+                document.getElementById('adminPassword').value = '';
+                adminAuthModal.style.display = 'flex';
+            }
         }
         
         function updateUIForAdmin() {
-            // Mostrar botones de agregar
             document.getElementById('addInventoryItem').style.display = 'block';
             document.getElementById('addRepairItem').style.display = 'block';
             document.getElementById('addEventList').style.display = 'block';
-            
-            // Mostrar botones de edición/eliminación
-            document.querySelectorAll('.edit-item, .delete-item, .delete-event-list').forEach(btn => {
-                btn.style.display = 'inline-block';
-            });
+            document.getElementById('addNoteBtn').style.display = 'block';
         }
         
         function updateUIForUser() {
-            // Ocultar botones de agregar
             document.getElementById('addInventoryItem').style.display = 'none';
             document.getElementById('addRepairItem').style.display = 'none';
             document.getElementById('addEventList').style.display = 'block';
-            
-            // Ocultar botones de edición/eliminación
-            document.querySelectorAll('.edit-item, .delete-item, .delete-event-list').forEach(btn => {
-                btn.style.display = 'none';
-            });
+            document.getElementById('addNoteBtn').style.display = 'block';
         }
         
         function switchTab(e) {
@@ -600,14 +613,11 @@
             });
             
             if (isAdmin) {
-                const deleteBtn = eventListElement.querySelector('.delete-event-list');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', (e) => {
-                        if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
-                            database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
-                        }
-                    });
-                }
+                eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
+                    if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
+                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
+                    }
+                });
             }
         }
         

@@ -615,7 +615,25 @@
             if (isAdmin) {
                 eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
                     if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
-                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
+                        // Primero devolver todos los items al inventario
+                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}/items`).once('value').then((snapshot) => {
+                            const items = snapshot.val() || {};
+                            const updates = {};
+                            
+                            for (const itemId in items) {
+                                const item = items[itemId];
+                                if (item.inventarioId) {
+                                    updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
+                                }
+                            }
+                            
+                            if (Object.keys(updates).length > 0) {
+                                database.ref().update(updates);
+                            }
+                            
+                            // Luego eliminar la lista
+                            database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
+                        });
                     }
                 });
             }
@@ -627,7 +645,7 @@
             itemElement.innerHTML = `
                 <div class="item-name">${item.nombre} (${item.cantidad})</div>
                 <div class="item-actions">
-                    <button class="remove-from-event danger" data-event-id="${eventId}" data-item-id="${itemId}">Quitar</button>
+                    <button class="remove-from-event danger" data-event-id="${eventId}" data-item-id="${itemId}" data-inventario-id="${item.inventarioId || ''}" data-cantidad="${item.cantidad}">Quitar</button>
                 </div>
             `;
             
@@ -635,7 +653,21 @@
             
             itemElement.querySelector('.remove-from-event').addEventListener('click', (e) => {
                 if (confirm('¿Estás seguro de quitar este item de la lista?')) {
-                    database.ref(`eventos/${eventId}/items/${itemId}`).remove();
+                    const inventarioId = e.target.getAttribute('data-inventario-id');
+                    const cantidad = parseInt(e.target.getAttribute('data-cantidad'));
+                    
+                    if (inventarioId) {
+                        // Devolver la cantidad al inventario
+                        database.ref(`inventario/${inventarioId}/cantidad`).transaction((current) => {
+                            return (current || 0) + cantidad;
+                        }).then(() => {
+                            // Eliminar de la lista después de actualizar inventario
+                            database.ref(`eventos/${eventId}/items/${itemId}`).remove();
+                        });
+                    } else {
+                        // Si no tiene referencia, solo eliminar
+                        database.ref(`eventos/${eventId}/items/${itemId}`).remove();
+                    }
                 }
             });
         }
@@ -754,6 +786,7 @@
                     option.value = id;
                     option.textContent = `${item.nombre} (Disponible: ${item.cantidad})`;
                     option.setAttribute('data-max', item.cantidad);
+                    option.setAttribute('data-inventario-id', id);
                     select.appendChild(option);
                 }
             });
@@ -769,22 +802,39 @@
             const itemId = document.getElementById('inventoryItemSelect').value;
             const quantity = parseInt(document.getElementById('eventItemQuantity').value);
             const maxQuantity = parseInt(document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-max'));
+            const inventarioId = document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-inventario-id');
             
             if (quantity > maxQuantity) {
                 alert(`No hay suficiente cantidad disponible. Máximo: ${maxQuantity}`);
                 return;
             }
-            
-            database.ref(`inventario/${itemId}`).once('value').then((snapshot) => {
+
+            // Obtener el item actual del inventario
+            database.ref(`inventario/${inventarioId}`).once('value').then((snapshot) => {
                 const item = snapshot.val();
-                
-                const eventItemData = {
-                    nombre: item.nombre,
-                    cantidad: quantity
-                };
-                
-                database.ref(`eventos/${eventId}/items`).push(eventItemData);
-                addToEventModal.style.display = 'none';
+                const nuevaCantidad = item.cantidad - quantity;
+
+                // Actualizar el inventario primero
+                database.ref(`inventario/${inventarioId}/cantidad`).set(nuevaCantidad)
+                    .then(() => {
+                        // Solo después de actualizar el inventario, agregar a la lista
+                        const eventItemData = {
+                            nombre: item.nombre,
+                            cantidad: quantity,
+                            inventarioId: inventarioId // Guardamos referencia al item original
+                        };
+                        
+                        return database.ref(`eventos/${eventId}/items`).push(eventItemData);
+                    })
+                    .then(() => {
+                        addToEventModal.style.display = 'none';
+                        // Actualizar automáticamente la vista
+                        loadData();
+                    })
+                    .catch((error) => {
+                        console.error("Error al actualizar:", error);
+                        alert("Ocurrió un error al actualizar el inventario");
+                    });
             });
         }
         

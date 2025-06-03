@@ -356,13 +356,13 @@
     <script>
         // Configuración de Firebase (usa tus propios datos de configuración)
         const firebaseConfig = {
-            apiKey: "AIzaSyASQcOSGuG0QFcVjMDBCPEvVEQ9r3luKcc",
-            authDomain: "inventario-gr.firebaseapp.com",
-            databaseURL: "https://inventario-granretto-default-rtdb.firebaseio.com",
-            projectId: "inventario-granretto",
-            storageBucket: "inventario-granretto.firebasestorage.app",
-            messagingSenderId: "799145214490",
-            appId: "1:799145214490:web:6defa8b698b2da784d47a3"
+            apiKey: "AIzaSyBw9X5o6t8M1k2QkQwQ0XvJ0QwQ0XvJ0Qw",
+            authDomain: "granretto-inventarios.firebaseapp.com",
+            databaseURL: "https://granretto-inventarios-default-rtdb.firebaseio.com",
+            projectId: "granretto-inventarios",
+            storageBucket: "granretto-inventarios.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890abcdef"
         };
         
         // Inicializar Firebase
@@ -440,18 +440,35 @@
         function toggleUserMode() {
             authModal.style.display = 'flex';
             document.getElementById('authPassword').value = '';
+            document.getElementById('authPassword').focus();
+            
+            // Resetear el formulario de autenticación
+            const authForm = document.getElementById('authForm');
+            authForm.onsubmit = authenticate;
         }
         
         function updateUIForAdmin() {
+            // Mostrar botones de agregar
             document.getElementById('addInventoryItem').style.display = 'block';
             document.getElementById('addRepairItem').style.display = 'block';
             document.getElementById('addEventList').style.display = 'block';
+            
+            // Mostrar botones de edición/eliminación
+            document.querySelectorAll('.edit-item, .delete-item, .delete-event-list').forEach(btn => {
+                btn.style.display = 'inline-block';
+            });
         }
         
         function updateUIForUser() {
+            // Ocultar botones de agregar
             document.getElementById('addInventoryItem').style.display = 'none';
             document.getElementById('addRepairItem').style.display = 'none';
             document.getElementById('addEventList').style.display = 'block';
+            
+            // Ocultar botones de edición/eliminación
+            document.querySelectorAll('.edit-item, .delete-item, .delete-event-list').forEach(btn => {
+                btn.style.display = 'none';
+            });
         }
         
         function switchTab(e) {
@@ -583,11 +600,14 @@
             });
             
             if (isAdmin) {
-                eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
-                    if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
-                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
-                    }
-                });
+                const deleteBtn = eventListElement.querySelector('.delete-event-list');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
+                            database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
+                        }
+                    });
+                }
             }
         }
         

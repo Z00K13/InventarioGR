@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GranRetto Inventarios</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --azul: #1E88E5;
+            --amarillo: #FFD600;
+            --rojo: #F44336;
+            --negro: #212121;
+            --blanco: #FFFFFF;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background-color: var(--blanco);
+            color: var(--negro);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background-color: var(--azul);
+            color: var(--blanco);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .user-toggle {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: var(--amarillo);
+            color: var(--negro);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: var(--azul);
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 1rem;
+            color: var(--blanco);
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--amarillo);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 1rem;
+            flex-grow: 1;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .item-list {
+            margin-top: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            flex-grow: 1;
+        }
+        
+        .item-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .item-quantity {
+            width: 50px;
+            text-align: center;
+            margin: 0 0.5rem;
+        }
+        
+        button {
+            background-color: var(--azul);
+            color: var(--blanco);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button.danger {
+            background-color: var(--rojo);
+        }
+        
+        button.success {
+            background-color: var(--amarillo);
+            color: var(--negro);
+        }
+        
+        .add-item-form {
+            display: flex;
+            margin-top: 1rem;
+            gap: 0.5rem;
+        }
+        
+        .add-item-form input {
+            flex-grow: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .note {
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--azul);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .note-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .note-content {
+            color: #555;
+        }
+        
+        .add-note-form {
+            margin-top: 1rem;
+        }
+        
+        .add-note-form input, .add-note-form textarea {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .add-note-form textarea {
+            min-height: 100px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: var(--blanco);
+            padding: 2rem;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-title {
+            margin-bottom: 1rem;
+            color: var(--azul);
+        }
+        
+        .modal-close {
+            float: right;
+            cursor: pointer;
+        }
+        
+        .modal-form input, .modal-form select {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .install-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--amarillo);
+            color: var(--negro);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GranRetto Inventarios</h1>
+        <button class="user-toggle" id="userToggle">Modo Usuario</button>
+    </header>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="inventario">Inventario Timing</div>
+        <div class="tab" data-tab="reparaciones">Reparaciones</div>
+        <div class="tab" data-tab="eventos">Listas de Evento</div>
+        <div class="tab" data-tab="notas">Notas</div>
+    </div>
+    
+    <div class="tab-content active" id="inventario">
+        <h2>Inventario General de Timing</h2>
+        <button id="addInventoryItem">Agregar Item</button>
+        <div class="item-list" id="inventoryList"></div>
+    </div>
+    
+    <div class="tab-content" id="reparaciones">
+        <h2>Reparaciones</h2>
+        <button id="addRepairItem">Agregar Item</button>
+        <div class="item-list" id="repairsList"></div>
+    </div>
+    
+    <div class="tab-content" id="eventos">
+        <h2>Listas de Evento</h2>
+        <button id="addEventList">Crear Nueva Lista</button>
+        <div id="eventListsContainer"></div>
+    </div>
+    
+    <div class="tab-content" id="notas">
+        <h2>Notas</h2>
+        <button id="addNoteBtn">Agregar Nota</button>
+        <div id="notesContainer"></div>
+    </div>
+    
+    <!-- Modal para agregar/editar items -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeModal">&times;</span>
+            <h3 class="modal-title" id="modalTitle">Agregar Item</h3>
+            <form class="modal-form" id="itemForm">
+                <input type="text" id="itemName" placeholder="Nombre del item" required>
+                <input type="number" id="itemQuantity" placeholder="Cantidad" min="0" required>
+                <input type="hidden" id="itemId">
+                <input type="hidden" id="itemType">
+                <button type="submit" id="saveItem">Guardar</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar/editar listas de evento -->
+    <div class="modal" id="eventListModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeEventModal">&times;</span>
+            <h3 class="modal-title" id="eventModalTitle">Crear Lista de Evento</h3>
+            <form class="modal-form" id="eventListForm">
+                <input type="text" id="eventListName" placeholder="Nombre de la lista" required>
+                <input type="hidden" id="eventListId">
+                <button type="submit" id="saveEventList">Guardar</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar items a listas de evento -->
+    <div class="modal" id="addToEventModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeAddToEventModal">&times;</span>
+            <h3 class="modal-title">Agregar Item a Lista</h3>
+            <form class="modal-form" id="addToEventForm">
+                <select id="inventoryItemSelect" required>
+                    <option value="">Seleccionar item</option>
+                </select>
+                <input type="number" id="eventItemQuantity" placeholder="Cantidad" min="1" required>
+                <input type="hidden" id="currentEventListId">
+                <button type="submit">Agregar</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar/editar notas -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeNoteModal">&times;</span>
+            <h3 class="modal-title" id="noteModalTitle">Nueva Nota</h3>
+            <form class="modal-form" id="noteForm">
+                <input type="text" id="noteTitle" placeholder="Título" required>
+                <textarea id="noteContent" placeholder="Contenido" required></textarea>
+                <input type="hidden" id="noteId">
+                <button type="submit">Guardar Nota</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de autenticación -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Ingrese la contraseña</h3>
+            <form class="modal-form" id="authForm">
+                <input type="password" id="authPassword" placeholder="Contraseña" required>
+                <button type="submit">Acceder</button>
+            </form>
+        </div>
+    </div>
+    
+    <button id="installBtn" class="install-btn">Instalar App</button>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script>
+        // Configuración de Firebase (usa tus propios datos de configuración)
+        const firebaseConfig = {
+            apiKey: "AIzaSyASQcOSGuG0QFcVjMDBCPEvVEQ9r3luKcc",
+            authDomain: "inventario-gr.firebaseapp.com",
+            databaseURL: "https://inventario-granretto-default-rtdb.firebaseio.com",
+            projectId: "inventario-granretto",
+            storageBucket: "inventario-granretto.firebasestorage.app",
+            messagingSenderId: "799145214490",
+            appId: "1:799145214490:web:6defa8b698b2da784d47a3"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Variables de estado
+        let isAdmin = false;
+        let deferredPrompt;
+        
+        // Elementos del DOM
+        const userToggle = document.getElementById('userToggle');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const inventoryList = document.getElementById('inventoryList');
+        const repairsList = document.getElementById('repairsList');
+        const eventListsContainer = document.getElementById('eventListsContainer');
+        const notesContainer = document.getElementById('notesContainer');
+        const itemModal = document.getElementById('itemModal');
+        const eventListModal = document.getElementById('eventListModal');
+        const addToEventModal = document.getElementById('addToEventModal');
+        const noteModal = document.getElementById('noteModal');
+        const authModal = document.getElementById('authModal');
+        const installBtn = document.getElementById('installBtn');
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', initApp);
+        tabs.forEach(tab => tab.addEventListener('click', switchTab));
+        userToggle.addEventListener('click', toggleUserMode);
+        document.getElementById('addInventoryItem').addEventListener('click', () => openItemModal('inventario'));
+        document.getElementById('addRepairItem').addEventListener('click', () => openItemModal('reparaciones'));
+        document.getElementById('addEventList').addEventListener('click', openEventListModal);
+        document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
+        document.getElementById('closeModal').addEventListener('click', () => itemModal.style.display = 'none');
+        document.getElementById('closeEventModal').addEventListener('click', () => eventListModal.style.display = 'none');
+        document.getElementById('closeAddToEventModal').addEventListener('click', () => addToEventModal.style.display = 'none');
+        document.getElementById('closeNoteModal').addEventListener('click', () => noteModal.style.display = 'none');
+        document.getElementById('itemForm').addEventListener('submit', saveItem);
+        document.getElementById('eventListForm').addEventListener('submit', saveEventList);
+        document.getElementById('addToEventForm').addEventListener('submit', addItemToEventList);
+        document.getElementById('noteForm').addEventListener('submit', saveNote);
+        document.getElementById('authForm').addEventListener('submit', authenticate);
+        installBtn.addEventListener('click', installPWA);
+        
+        // Evento para instalar PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+        
+        // Funciones
+        function initApp() {
+            authModal.style.display = 'flex';
+            loadData();
+        }
+        
+        function authenticate(e) {
+            e.preventDefault();
+            const password = document.getElementById('authPassword').value;
+            
+            if (password === 'GranRetto') {
+                isAdmin = true;
+                userToggle.textContent = 'Modo Admin';
+                authModal.style.display = 'none';
+                updateUIForAdmin();
+            } else {
+                isAdmin = false;
+                userToggle.textContent = 'Modo Usuario';
+                authModal.style.display = 'none';
+                updateUIForUser();
+            }
+        }
+        
+        function toggleUserMode() {
+            authModal.style.display = 'flex';
+            document.getElementById('authPassword').value = '';
+        }
+        
+        function updateUIForAdmin() {
+            document.getElementById('addInventoryItem').style.display = 'block';
+            document.getElementById('addRepairItem').style.display = 'block';
+            document.getElementById('addEventList').style.display = 'block';
+        }
+        
+        function updateUIForUser() {
+            document.getElementById('addInventoryItem').style.display = 'none';
+            document.getElementById('addRepairItem').style.display = 'none';
+            document.getElementById('addEventList').style.display = 'block';
+        }
+        
+        function switchTab(e) {
+            const tabId = e.target.getAttribute('data-tab');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        function loadData() {
+            // Cargar inventario
+            database.ref('inventario').on('value', (snapshot) => {
+                inventoryList.innerHTML = '';
+                const items = snapshot.val() || {};
+                
+                for (const id in items) {
+                    const item = items[id];
+                    createInventoryItemElement(id, item);
+                }
+            });
+            
+            // Cargar reparaciones
+            database.ref('reparaciones').on('value', (snapshot) => {
+                repairsList.innerHTML = '';
+                const items = snapshot.val() || {};
+                
+                for (const id in items) {
+                    const item = items[id];
+                    createRepairItemElement(id, item);
+                }
+            });
+            
+            // Cargar listas de evento
+            database.ref('eventos').on('value', (snapshot) => {
+                eventListsContainer.innerHTML = '';
+                const eventLists = snapshot.val() || {};
+                
+                for (const id in eventLists) {
+                    const eventList = eventLists[id];
+                    createEventListElement(id, eventList);
+                }
+            });
+            
+            // Cargar notas
+            database.ref('notas').on('value', (snapshot) => {
+                notesContainer.innerHTML = '';
+                const notes = snapshot.val() || {};
+                
+                for (const id in notes) {
+                    const note = notes[id];
+                    createNoteElement(id, note);
+                }
+            });
+        }
+        
+        function createInventoryItemElement(id, item) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'item';
+            itemElement.innerHTML = `
+                <div class="item-name">${item.nombre}</div>
+                <div class="item-actions">
+                    <span>Cantidad: ${item.cantidad}</span>
+                    ${isAdmin ? `
+                        <button class="edit-item" data-id="${id}" data-type="inventario">Editar</button>
+                        <button class="delete-item danger" data-id="${id}" data-type="inventario">Eliminar</button>
+                    ` : ''}
+                </div>
+            `;
+            
+            inventoryList.appendChild(itemElement);
+            
+            if (isAdmin) {
+                itemElement.querySelector('.edit-item').addEventListener('click', () => editItem(id, 'inventario'));
+                itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'inventario'));
+            }
+        }
+        
+        function createRepairItemElement(id, item) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'item';
+            itemElement.innerHTML = `
+                <div class="item-name">${item.nombre}</div>
+                <div class="item-actions">
+                    <span>Cantidad: ${item.cantidad}</span>
+                    ${isAdmin ? `
+                        <button class="edit-item" data-id="${id}" data-type="reparaciones">Editar</button>
+                        <button class="delete-item danger" data-id="${id}" data-type="reparaciones">Eliminar</button>
+                    ` : ''}
+                </div>
+            `;
+            
+            repairsList.appendChild(itemElement);
+            
+            if (isAdmin) {
+                itemElement.querySelector('.edit-item').addEventListener('click', () => editItem(id, 'reparaciones'));
+                itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'reparaciones'));
+            }
+        }
+        
+        function createEventListElement(id, eventList) {
+            const eventListElement = document.createElement('div');
+            eventListElement.className = 'event-list';
+            eventListElement.innerHTML = `
+                <h3>${eventList.nombre}</h3>
+                <div class="item-list" id="eventItems-${id}"></div>
+                <button class="add-to-event" data-event-id="${id}">Agregar Item</button>
+                ${isAdmin ? `<button class="delete-event-list danger" data-event-id="${id}">Eliminar Lista</button>` : ''}
+            `;
+            
+            eventListsContainer.appendChild(eventListElement);
+            
+            // Cargar items de esta lista de evento
+            database.ref(`eventos/${id}/items`).on('value', (snapshot) => {
+                const eventItemsContainer = document.getElementById(`eventItems-${id}`);
+                eventItemsContainer.innerHTML = '';
+                
+                const items = snapshot.val() || {};
+                for (const itemId in items) {
+                    const item = items[itemId];
+                    createEventListItemElement(id, itemId, item);
+                }
+            });
+            
+            eventListElement.querySelector('.add-to-event').addEventListener('click', (e) => {
+                openAddToEventModal(e.target.getAttribute('data-event-id'));
+            });
+            
+            if (isAdmin) {
+                eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
+                    if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
+                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
+                    }
+                });
+            }
+        }
+        
+        function createEventListItemElement(eventId, itemId, item) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'item';
+            itemElement.innerHTML = `
+                <div class="item-name">${item.nombre} (${item.cantidad})</div>
+                <div class="item-actions">
+                    <button class="remove-from-event danger" data-event-id="${eventId}" data-item-id="${itemId}">Quitar</button>
+                </div>
+            `;
+            
+            document.getElementById(`eventItems-${eventId}`).appendChild(itemElement);
+            
+            itemElement.querySelector('.remove-from-event').addEventListener('click', (e) => {
+                if (confirm('¿Estás seguro de quitar este item de la lista?')) {
+                    database.ref(`eventos/${eventId}/items/${itemId}`).remove();
+                }
+            });
+        }
+        
+        function createNoteElement(id, note) {
+            const noteElement = document.createElement('div');
+            noteElement.className = 'note';
+            noteElement.innerHTML = `
+                <div class="note-title">${note.titulo}</div>
+                <div class="note-content">${note.contenido}</div>
+                <div class="note-actions">
+                    <button class="edit-note" data-note-id="${id}">Editar</button>
+                    <button class="delete-note danger" data-note-id="${id}">Eliminar</button>
+                </div>
+            `;
+            
+            notesContainer.appendChild(noteElement);
+            
+            noteElement.querySelector('.edit-note').addEventListener('click', () => editNote(id));
+            noteElement.querySelector('.delete-note').addEventListener('click', () => deleteNote(id));
+        }
+        
+        function openItemModal(type) {
+            document.getElementById('modalTitle').textContent = type === 'inventario' ? 'Agregar Item al Inventario' : 'Agregar Item a Reparaciones';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemQuantity').value = '';
+            document.getElementById('itemId').value = '';
+            document.getElementById('itemType').value = type;
+            itemModal.style.display = 'flex';
+        }
+        
+        function editItem(id, type) {
+            database.ref(`${type}/${id}`).once('value').then((snapshot) => {
+                const item = snapshot.val();
+                document.getElementById('modalTitle').textContent = 'Editar Item';
+                document.getElementById('itemName').value = item.nombre;
+                document.getElementById('itemQuantity').value = item.cantidad;
+                document.getElementById('itemId').value = id;
+                document.getElementById('itemType').value = type;
+                itemModal.style.display = 'flex';
+            });
+        }
+        
+        function saveItem(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('itemId').value;
+            const name = document.getElementById('itemName').value;
+            const quantity = document.getElementById('itemQuantity').value;
+            const type = document.getElementById('itemType').value;
+            
+            const itemData = {
+                nombre: name,
+                cantidad: quantity
+            };
+            
+            if (id) {
+                // Actualizar item existente
+                database.ref(`${type}/${id}`).update(itemData);
+            } else {
+                // Crear nuevo item
+                database.ref(type).push(itemData);
+            }
+            
+            itemModal.style.display = 'none';
+        }
+        
+        function deleteItem(id, type) {
+            if (confirm('¿Estás seguro de eliminar este item?')) {
+                database.ref(`${type}/${id}`).remove();
+            }
+        }
+        
+        function openEventListModal() {
+            document.getElementById('eventModalTitle').textContent = 'Crear Lista de Evento';
+            document.getElementById('eventListName').value = '';
+            document.getElementById('eventListId').value = '';
+            eventListModal.style.display = 'flex';
+        }
+        
+        function saveEventList(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('eventListId').value;
+            const name = document.getElementById('eventListName').value;
+            
+            const eventListData = {
+                nombre: name,
+                items: {}
+            };
+            
+            if (id) {
+                // Actualizar lista existente (solo el nombre)
+                database.ref(`eventos/${id}/nombre`).set(name);
+            } else {
+                // Crear nueva lista
+                database.ref('eventos').push(eventListData);
+            }
+            
+            eventListModal.style.display = 'none';
+        }
+        
+        function openAddToEventModal(eventId) {
+            document.getElementById('currentEventListId').value = eventId;
+            
+            // Llenar el select con items del inventario
+            const select = document.getElementById('inventoryItemSelect');
+            select.innerHTML = '<option value="">Seleccionar item</option>';
+            
+            database.ref('inventario').once('value').then((snapshot) => {
+                const items = snapshot.val() || {};
+                
+                for (const id in items) {
+                    const item = items[id];
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = `${item.nombre} (Disponible: ${item.cantidad})`;
+                    option.setAttribute('data-max', item.cantidad);
+                    select.appendChild(option);
+                }
+            });
+            
+            document.getElementById('eventItemQuantity').value = '';
+            addToEventModal.style.display = 'flex';
+        }
+        
+        function addItemToEventList(e) {
+            e.preventDefault();
+            
+            const eventId = document.getElementById('currentEventListId').value;
+            const itemId = document.getElementById('inventoryItemSelect').value;
+            const quantity = parseInt(document.getElementById('eventItemQuantity').value);
+            const maxQuantity = parseInt(document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-max'));
+            
+            if (quantity > maxQuantity) {
+                alert(`No hay suficiente cantidad disponible. Máximo: ${maxQuantity}`);
+                return;
+            }
+            
+            database.ref(`inventario/${itemId}`).once('value').then((snapshot) => {
+                const item = snapshot.val();
+                
+                const eventItemData = {
+                    nombre: item.nombre,
+                    cantidad: quantity
+                };
+                
+                database.ref(`eventos/${eventId}/items`).push(eventItemData);
+                addToEventModal.style.display = 'none';
+            });
+        }
+        
+        function openNoteModal() {
+            document.getElementById('noteModalTitle').textContent = 'Nueva Nota';
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+            document.getElementById('noteId').value = '';
+            noteModal.style.display = 'flex';
+        }
+        
+        function editNote(id) {
+            database.ref(`notas/${id}`).once('value').then((snapshot) => {
+                const note = snapshot.val();
+                document.getElementById('noteModalTitle').textContent = 'Editar Nota';
+                document.getElementById('noteTitle').value = note.titulo;
+                document.getElementById('noteContent').value = note.contenido;
+                document.getElementById('noteId').value = id;
+                noteModal.style.display = 'flex';
+            });
+        }
+        
+        function saveNote(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('noteId').value;
+            const title = document.getElementById('noteTitle').value;
+            const content = document.getElementById('noteContent').value;
+            
+            const noteData = {
+                titulo: title,
+                contenido: content
+            };
+            
+            if (id) {
+                // Actualizar nota existente
+                database.ref(`notas/${id}`).update(noteData);
+            } else {
+                // Crear nueva nota
+                database.ref('notas').push(noteData);
+            }
+            
+            noteModal.style.display = 'none';
+        }
+        
+        function deleteNote(id) {
+            if (confirm('¿Estás seguro de eliminar esta nota?')) {
+                database.ref(`notas/${id}`).remove();
+            }
+        }
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        installBtn.style.display = 'none';
+                    }
+                    
+                    deferredPrompt = null;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

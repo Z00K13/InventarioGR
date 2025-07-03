@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GranRetto Inventarios</title>
-    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -13,6 +12,8 @@
             --rojo: #F44336;
             --negro: #212121;
             --blanco: #FFFFFF;
+            --gris: #f5f5f5;
+            --gris-oscuro: #757575;
         }
         
         * {
@@ -28,6 +29,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-size: 16px;
         }
         
         header {
@@ -46,10 +48,11 @@
             background-color: var(--amarillo);
             color: var(--negro);
             border: none;
-            padding: 5px 10px;
+            padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.9rem;
         }
         
         .tabs {
@@ -59,13 +62,15 @@
         }
         
         .tab {
-            padding: 1rem;
+            padding: 12px 16px;
             color: var(--blanco);
             cursor: pointer;
             flex: 1;
             text-align: center;
             border-bottom: 3px solid transparent;
             transition: all 0.3s;
+            font-size: 0.95rem;
+            min-width: 120px;
         }
         
         .tab.active {
@@ -83,6 +88,75 @@
             display: block;
         }
         
+        .categorias-container {
+            margin-bottom: 1rem;
+        }
+        
+        .categorias-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .categorias-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .categoria-tab {
+            padding: 8px 12px;
+            background: var(--gris);
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            border: 1px solid #ddd;
+        }
+        
+        .categoria-tab.active {
+            background: var(--azul);
+            color: var(--blanco);
+        }
+        
+        .categoria-tab .badge-en-uso {
+            background-color: var(--amarillo);
+            color: var(--negro);
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+        
+        .btn-categoria {
+            background-color: var(--azul);
+            color: var(--blanco);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn-categoria:hover {
+            opacity: 0.9;
+        }
+        
+        .edit-categoria-btn, .delete-categoria-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px;
+            color: inherit;
+        }
+        
         .item-list {
             margin-top: 1rem;
             border: 1px solid #ddd;
@@ -93,9 +167,14 @@
         .item {
             display: flex;
             justify-content: space-between;
-            padding: 0.75rem;
+            padding: 12px;
             border-bottom: 1px solid #eee;
             align-items: center;
+            background-color: var(--blanco);
+        }
+        
+        .item:nth-child(even) {
+            background-color: var(--gris);
         }
         
         .item:last-child {
@@ -104,27 +183,31 @@
         
         .item-name {
             flex-grow: 1;
+            font-size: 0.95rem;
         }
         
         .item-actions {
             display: flex;
             align-items: center;
+            gap: 5px;
         }
         
         .item-quantity {
             width: 50px;
             text-align: center;
             margin: 0 0.5rem;
+            font-size: 0.9rem;
         }
         
         button {
             background-color: var(--azul);
             color: var(--blanco);
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            font-size: 0.9rem;
         }
         
         button:hover {
@@ -140,6 +223,11 @@
             color: var(--negro);
         }
         
+        button.small {
+            padding: 5px 8px;
+            font-size: 0.8rem;
+        }
+        
         .add-item-form {
             display: flex;
             margin-top: 1rem;
@@ -148,9 +236,10 @@
         
         .add-item-form input {
             flex-grow: 1;
-            padding: 0.5rem;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            font-size: 0.9rem;
         }
         
         .note {
@@ -164,10 +253,12 @@
         .note-title {
             font-weight: bold;
             margin-bottom: 0.5rem;
+            font-size: 1rem;
         }
         
         .note-content {
             color: #555;
+            font-size: 0.9rem;
         }
         
         .add-note-form {
@@ -176,10 +267,11 @@
         
         .add-note-form input, .add-note-form textarea {
             width: 100%;
-            padding: 0.5rem;
+            padding: 8px;
             margin-bottom: 0.5rem;
             border: 1px solid #ddd;
             border-radius: 5px;
+            font-size: 0.9rem;
         }
         
         .add-note-form textarea {
@@ -201,68 +293,120 @@
         
         .modal-content {
             background-color: var(--blanco);
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 5px;
             width: 90%;
             max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .modal-title {
             margin-bottom: 1rem;
             color: var(--azul);
+            font-size: 1.2rem;
         }
         
         .modal-close {
             float: right;
             cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--gris-oscuro);
         }
         
         .modal-form input, .modal-form select {
             width: 100%;
-            padding: 0.5rem;
+            padding: 8px;
             margin-bottom: 1rem;
             border: 1px solid #ddd;
             border-radius: 5px;
+            font-size: 0.9rem;
         }
         
-        .install-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--amarillo);
-            color: var(--negro);
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none;
-        }
-
-        /* Estilos para el modal de admin */
         #adminAuthModal .modal-content {
             background-color: var(--blanco);
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 5px;
             width: 90%;
             max-width: 400px;
         }
-
+        
         #adminAuthForm {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
-
+        
         #adminAuthForm button[type="submit"] {
             background-color: var(--azul);
             color: white;
         }
-
+        
         #cancelAdminAuth {
             background-color: #ccc;
             color: var(--negro);
+        }
+        
+        .search-container {
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 30px 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gris-oscuro);
+        }
+        
+        @media (max-width: 768px) {
+            .tab {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+                min-width: 100px;
+            }
+            
+            .item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .item-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            button {
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tab {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+                min-width: 80px;
+            }
+            
+            .user-toggle {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            
+            .modal-content {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
@@ -280,14 +424,12 @@
     </div>
     
     <div class="tab-content active" id="inventario">
-        <h2>Inventario General de Timing</h2>
-        <button id="addInventoryItem">Agregar Item</button>
+        <div class="categorias-container" id="categoriasContainer"></div>
         <div class="item-list" id="inventoryList"></div>
     </div>
     
     <div class="tab-content" id="reparaciones">
         <h2>Reparaciones</h2>
-        <button id="addRepairItem">Agregar Item</button>
         <div class="item-list" id="repairsList"></div>
     </div>
     
@@ -303,7 +445,6 @@
         <div id="notesContainer"></div>
     </div>
     
-    <!-- Modal para agregar/editar items -->
     <div class="modal" id="itemModal">
         <div class="modal-content">
             <span class="modal-close" id="closeModal">&times;</span>
@@ -313,12 +454,24 @@
                 <input type="number" id="itemQuantity" placeholder="Cantidad" min="0" required>
                 <input type="hidden" id="itemId">
                 <input type="hidden" id="itemType">
+                <input type="hidden" id="itemCategoria">
                 <button type="submit" id="saveItem">Guardar</button>
             </form>
         </div>
     </div>
     
-    <!-- Modal para agregar/editar listas de evento -->
+    <div class="modal" id="categoriaModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeCategoriaModal">&times;</span>
+            <h3 class="modal-title" id="categoriaModalTitle">Nueva Categoría</h3>
+            <form class="modal-form" id="categoriaForm">
+                <input type="text" id="categoriaNombre" placeholder="Nombre de la categoría" required>
+                <input type="hidden" id="categoriaId">
+                <button type="submit">Guardar</button>
+            </form>
+        </div>
+    </div>
+    
     <div class="modal" id="eventListModal">
         <div class="modal-content">
             <span class="modal-close" id="closeEventModal">&times;</span>
@@ -331,11 +484,14 @@
         </div>
     </div>
     
-    <!-- Modal para agregar items a listas de evento -->
     <div class="modal" id="addToEventModal">
         <div class="modal-content">
             <span class="modal-close" id="closeAddToEventModal">&times;</span>
             <h3 class="modal-title">Agregar Item a Lista</h3>
+            <div class="search-container">
+                <input type="text" id="itemSearch" class="search-input" placeholder="Buscar item por nombre...">
+                <span class="search-icon">🔍</span>
+            </div>
             <form class="modal-form" id="addToEventForm">
                 <select id="inventoryItemSelect" required>
                     <option value="">Seleccionar item</option>
@@ -347,7 +503,6 @@
         </div>
     </div>
     
-    <!-- Modal para agregar/editar notas -->
     <div class="modal" id="noteModal">
         <div class="modal-content">
             <span class="modal-close" id="closeNoteModal">&times;</span>
@@ -361,7 +516,6 @@
         </div>
     </div>
     
-    <!-- Modal para autenticación de admin -->
     <div class="modal" id="adminAuthModal">
         <div class="modal-content">
             <h3 class="modal-title">Contraseña de Admin</h3>
@@ -373,20 +527,17 @@
         </div>
     </div>
     
-    <button id="installBtn" class="install-btn">Instalar App</button>
-    
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     
     <script>
-        // Configuración de Firebase con tus credenciales reales
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyASQcOSGuG0QFcVjMDBCPEvVEQ9r3luKcc",
             authDomain: "inventario-gr.firebaseapp.com",
             databaseURL: "https://inventario-gr-default-rtdb.firebaseio.com",
             projectId: "inventario-gr",
-            storageBucket: "inventario-gr.firebasestorage.app",
+            storageBucket: "inventario-gr.appspot.com",
             messagingSenderId: "1149597610",
             appId: "1:1149597610:web:2ae606ea1c5b50015eddd3"
         };
@@ -397,196 +548,299 @@
         
         // Variables de estado
         let isAdmin = false;
-        let deferredPrompt;
+        let currentCategoria = null;
+        let inventoryItems = {};
+        let repairItems = {};
+        let eventLists = {};
+        let notes = {};
         
         // Elementos del DOM
         const userToggle = document.getElementById('userToggle');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
+        const categoriasContainer = document.getElementById('categoriasContainer');
         const inventoryList = document.getElementById('inventoryList');
         const repairsList = document.getElementById('repairsList');
         const eventListsContainer = document.getElementById('eventListsContainer');
         const notesContainer = document.getElementById('notesContainer');
         const itemModal = document.getElementById('itemModal');
+        const categoriaModal = document.getElementById('categoriaModal');
         const eventListModal = document.getElementById('eventListModal');
         const addToEventModal = document.getElementById('addToEventModal');
         const noteModal = document.getElementById('noteModal');
         const adminAuthModal = document.getElementById('adminAuthModal');
-        const installBtn = document.getElementById('installBtn');
         
         // Event Listeners
         document.addEventListener('DOMContentLoaded', initApp);
         tabs.forEach(tab => tab.addEventListener('click', switchTab));
         userToggle.addEventListener('click', toggleUserMode);
-        document.getElementById('addInventoryItem').addEventListener('click', () => openItemModal('inventario'));
-        document.getElementById('addRepairItem').addEventListener('click', () => openItemModal('reparaciones'));
         document.getElementById('addEventList').addEventListener('click', openEventListModal);
         document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
         document.getElementById('closeModal').addEventListener('click', () => itemModal.style.display = 'none');
+        document.getElementById('closeCategoriaModal').addEventListener('click', () => categoriaModal.style.display = 'none');
         document.getElementById('closeEventModal').addEventListener('click', () => eventListModal.style.display = 'none');
         document.getElementById('closeAddToEventModal').addEventListener('click', () => addToEventModal.style.display = 'none');
         document.getElementById('closeNoteModal').addEventListener('click', () => noteModal.style.display = 'none');
         document.getElementById('itemForm').addEventListener('submit', saveItem);
+        document.getElementById('categoriaForm').addEventListener('submit', saveCategoria);
         document.getElementById('eventListForm').addEventListener('submit', saveEventList);
         document.getElementById('addToEventForm').addEventListener('submit', addItemToEventList);
         document.getElementById('noteForm').addEventListener('submit', saveNote);
         document.getElementById('adminAuthForm').addEventListener('submit', authenticateAdmin);
         document.getElementById('cancelAdminAuth').addEventListener('click', () => adminAuthModal.style.display = 'none');
-        installBtn.addEventListener('click', installPWA);
         
         // Funciones
         function initApp() {
-            // Iniciar directamente como usuario
             isAdmin = false;
             userToggle.textContent = 'Cambiar a Admin';
             updateUIForUser();
-            loadData();
+            setupFirebaseListeners();
+            initCategoriasInventario();
         }
         
-        function authenticateAdmin(e) {
-            e.preventDefault();
-            const password = document.getElementById('adminPassword').value;
+        function setupFirebaseListeners() {
+            database.ref('categorias').on('value', handleCategoriasUpdate);
+            database.ref('inventario').on('value', handleInventoryUpdate);
+            database.ref('reparaciones').on('value', handleRepairsUpdate);
+            database.ref('eventos').on('value', handleEventListsUpdate);
+            database.ref('notas').on('value', handleNotesUpdate);
+        }
+        
+        function handleCategoriasUpdate(snapshot) {
+            const categorias = snapshot.val() || {};
+            const tabsContainer = document.getElementById('categoriasTabs');
             
-            if (password === 'GranRetto') {
-                isAdmin = true;
-                userToggle.textContent = 'Cambiar a Usuario';
-                adminAuthModal.style.display = 'none';
-                updateUIForAdmin();
-            } else {
-                alert('Contraseña incorrecta');
+            if (Object.keys(categorias).length === 0) {
+                database.ref('categorias').push({ nombre: 'General' });
+                return;
             }
+            
+            tabsContainer.innerHTML = '';
+            let firstCategoria = null;
+            
+            for (const id in categorias) {
+                if (!firstCategoria) firstCategoria = id;
+                
+                const categoria = categorias[id];
+                const tab = document.createElement('div');
+                tab.className = `categoria-tab ${currentCategoria === id ? 'active' : ''}`;
+                tab.setAttribute('data-categoria-id', id);
+                tab.innerHTML = `
+                    ${categoria.nombre}
+                    ${isAdmin ? `
+                        <button class="edit-categoria-btn" data-id="${id}">✏️</button>
+                        <button class="delete-categoria-btn" data-id="${id}">🗑️</button>
+                    ` : ''}
+                `;
+                
+                tab.addEventListener('click', () => {
+                    currentCategoria = id;
+                    renderizarCategoriaTab();
+                    renderInventoryItems();
+                });
+                
+                if (isAdmin) {
+                    tab.querySelector('.edit-categoria-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editCategoria(id);
+                    });
+                    
+                    tab.querySelector('.delete-categoria-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteCategoria(id);
+                    });
+                }
+                
+                tabsContainer.appendChild(tab);
+            }
+            
+            if (!currentCategoria && firstCategoria) {
+                currentCategoria = firstCategoria;
+                renderizarCategoriaTab();
+            }
+            
+            renderInventoryItems();
         }
         
-        function toggleUserMode() {
+        function handleInventoryUpdate(snapshot) {
+            inventoryItems = snapshot.val() || {};
+            renderInventoryItems();
+        }
+        
+        function handleRepairsUpdate(snapshot) {
+            repairItems = snapshot.val() || {};
+            renderRepairs();
+        }
+        
+        function handleEventListsUpdate(snapshot) {
+            eventLists = snapshot.val() || {};
+            renderEventLists();
+        }
+        
+        function handleNotesUpdate(snapshot) {
+            notes = snapshot.val() || {};
+            renderNotes();
+        }
+        
+        function initCategoriasInventario() {
+            categoriasContainer.innerHTML = `
+                <div class="categorias-header">
+                    <h2>Inventario General de Timing</h2>
+                    ${isAdmin ? '<button id="addCategoriaBtn" class="btn-categoria">+ Categoría</button>' : ''}
+                </div>
+                <div class="categorias-tabs" id="categoriasTabs"></div>
+            `;
+            
             if (isAdmin) {
-                // Si ya es admin, cambiar a usuario
-                isAdmin = false;
-                userToggle.textContent = 'Cambiar a Admin';
-                updateUIForUser();
-            } else {
-                // Si es usuario, pedir contraseña para cambiar a admin
-                document.getElementById('adminPassword').value = '';
-                adminAuthModal.style.display = 'flex';
+                document.getElementById('addCategoriaBtn').addEventListener('click', openCategoriaModal);
             }
         }
         
-        function updateUIForAdmin() {
-            document.getElementById('addInventoryItem').style.display = 'block';
-            document.getElementById('addRepairItem').style.display = 'block';
-            document.getElementById('addEventList').style.display = 'block';
-            document.getElementById('addNoteBtn').style.display = 'block';
+        function renderizarCategoriaTab() {
+            const tabs = document.querySelectorAll('.categoria-tab');
+            tabs.forEach(tab => {
+                const categoriaId = tab.getAttribute('data-categoria-id');
+                tab.classList.toggle('active', currentCategoria === categoriaId);
+            });
         }
         
-        function updateUIForUser() {
-            document.getElementById('addInventoryItem').style.display = 'none';
-            document.getElementById('addRepairItem').style.display = 'none';
-            document.getElementById('addEventList').style.display = 'block';
-            document.getElementById('addNoteBtn').style.display = 'block';
-        }
-        
-        function switchTab(e) {
-            const tabId = e.target.getAttribute('data-tab');
+        function renderInventoryItems() {
+            if (!currentCategoria) return;
             
-            tabs.forEach(tab => tab.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+            inventoryList.innerHTML = '';
             
-            e.target.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        }
-        
-        function loadData() {
-            // Cargar inventario
-            database.ref('inventario').on('value', (snapshot) => {
-                inventoryList.innerHTML = '';
-                const items = snapshot.val() || {};
-                
-                for (const id in items) {
-                    const item = items[id];
-                    createInventoryItemElement(id, item);
-                }
-            });
+            if (isAdmin) {
+                const addItemBtn = document.createElement('button');
+                addItemBtn.textContent = 'Agregar Item';
+                addItemBtn.addEventListener('click', () => {
+                    document.getElementById('itemCategoria').value = currentCategoria;
+                    openItemModal('inventario');
+                });
+                inventoryList.appendChild(addItemBtn);
+            }
             
-            // Cargar reparaciones
-            database.ref('reparaciones').on('value', (snapshot) => {
-                repairsList.innerHTML = '';
-                const items = snapshot.val() || {};
-                
-                for (const id in items) {
-                    const item = items[id];
-                    createRepairItemElement(id, item);
-                }
-            });
+            const itemsInCategory = Object.entries(inventoryItems)
+                .filter(([id, item]) => item.categoria === currentCategoria);
             
-            // Cargar listas de evento
-            database.ref('eventos').on('value', (snapshot) => {
-                eventListsContainer.innerHTML = '';
-                const eventLists = snapshot.val() || {};
-                
-                for (const id in eventLists) {
-                    const eventList = eventLists[id];
-                    createEventListElement(id, eventList);
-                }
-            });
+            if (itemsInCategory.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay items en esta categoría';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                inventoryList.appendChild(emptyMessage);
+                return;
+            }
             
-            // Cargar notas
-            database.ref('notas').on('value', (snapshot) => {
-                notesContainer.innerHTML = '';
-                const notes = snapshot.val() || {};
-                
-                for (const id in notes) {
-                    const note = notes[id];
-                    createNoteElement(id, note);
-                }
+            itemsInCategory.forEach(([id, item]) => {
+                createInventoryItemElement(id, item);
             });
         }
         
         function createInventoryItemElement(id, item) {
             const itemElement = document.createElement('div');
             itemElement.className = 'item';
-            itemElement.innerHTML = `
-                <div class="item-name">${item.nombre}</div>
-                <div class="item-actions">
-                    <span>Cantidad: ${item.cantidad}</span>
-                    ${isAdmin ? `
-                        <button class="edit-item" data-id="${id}" data-type="inventario">Editar</button>
-                        <button class="delete-item danger" data-id="${id}" data-type="inventario">Eliminar</button>
-                    ` : ''}
-                </div>
-            `;
+            itemElement.setAttribute('data-item-id', id);
             
-            inventoryList.appendChild(itemElement);
+            estaItemEnUso(id).then(enUso => {
+                itemElement.innerHTML = `
+                    <div class="item-name">
+                        ${item.nombre}
+                        ${enUso ? '<span class="badge-en-uso">En uso</span>' : ''}
+                    </div>
+                    <div class="item-actions">
+                        <span>Cantidad: ${item.cantidad}</span>
+                        ${isAdmin ? `
+                            <button class="edit-item small" data-id="${id}" data-type="inventario">Editar</button>
+                            <button class="delete-item small danger" data-id="${id}" data-type="inventario">Eliminar</button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                if (isAdmin) {
+                    itemElement.querySelector('.edit-item').addEventListener('click', () => {
+                        document.getElementById('itemCategoria').value = currentCategoria;
+                        editItem(id, 'inventario');
+                    });
+                    itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'inventario'));
+                }
+                
+                inventoryList.appendChild(itemElement);
+            });
+        }
+        
+        function renderRepairs() {
+            repairsList.innerHTML = '';
             
             if (isAdmin) {
-                itemElement.querySelector('.edit-item').addEventListener('click', () => editItem(id, 'inventario'));
-                itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'inventario'));
+                const addItemBtn = document.createElement('button');
+                addItemBtn.textContent = 'Agregar Item';
+                addItemBtn.addEventListener('click', () => openItemModal('reparaciones'));
+                repairsList.appendChild(addItemBtn);
+            }
+            
+            if (Object.keys(repairItems).length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay items en reparación';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                repairsList.appendChild(emptyMessage);
+                return;
+            }
+            
+            for (const id in repairItems) {
+                const item = repairItems[id];
+                createRepairItemElement(id, item);
             }
         }
         
         function createRepairItemElement(id, item) {
             const itemElement = document.createElement('div');
             itemElement.className = 'item';
+            itemElement.setAttribute('data-item-id', id);
             itemElement.innerHTML = `
                 <div class="item-name">${item.nombre}</div>
                 <div class="item-actions">
                     <span>Cantidad: ${item.cantidad}</span>
                     ${isAdmin ? `
-                        <button class="edit-item" data-id="${id}" data-type="reparaciones">Editar</button>
-                        <button class="delete-item danger" data-id="${id}" data-type="reparaciones">Eliminar</button>
+                        <button class="edit-item small" data-id="${id}" data-type="reparaciones">Editar</button>
+                        <button class="delete-item small danger" data-id="${id}" data-type="reparaciones">Eliminar</button>
                     ` : ''}
                 </div>
             `;
             
-            repairsList.appendChild(itemElement);
-            
             if (isAdmin) {
                 itemElement.querySelector('.edit-item').addEventListener('click', () => editItem(id, 'reparaciones'));
                 itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'reparaciones'));
+            }
+            
+            repairsList.appendChild(itemElement);
+        }
+        
+        function renderEventLists() {
+            eventListsContainer.innerHTML = '';
+            
+            if (Object.keys(eventLists).length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay listas de evento creadas';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                eventListsContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            for (const id in eventLists) {
+                const eventList = eventLists[id];
+                createEventListElement(id, eventList);
             }
         }
         
         function createEventListElement(id, eventList) {
             const eventListElement = document.createElement('div');
             eventListElement.className = 'event-list';
+            eventListElement.setAttribute('data-event-id', id);
             eventListElement.innerHTML = `
                 <h3>${eventList.nombre}</h3>
                 <div class="item-list" id="eventItems-${id}"></div>
@@ -596,17 +850,7 @@
             
             eventListsContainer.appendChild(eventListElement);
             
-            // Cargar items de esta lista de evento
-            database.ref(`eventos/${id}/items`).on('value', (snapshot) => {
-                const eventItemsContainer = document.getElementById(`eventItems-${id}`);
-                eventItemsContainer.innerHTML = '';
-                
-                const items = snapshot.val() || {};
-                for (const itemId in items) {
-                    const item = items[itemId];
-                    createEventListItemElement(id, itemId, item);
-                }
-            });
+            renderEventListItems(id, eventList.items || {});
             
             eventListElement.querySelector('.add-to-event').addEventListener('click', (e) => {
                 openAddToEventModal(e.target.getAttribute('data-event-id'));
@@ -615,37 +859,55 @@
             if (isAdmin) {
                 eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
                     if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
-                        // Primero devolver todos los items al inventario
-                        database.ref(`eventos/${e.target.getAttribute('data-event-id')}/items`).once('value').then((snapshot) => {
-                            const items = snapshot.val() || {};
-                            const updates = {};
-                            
-                            for (const itemId in items) {
-                                const item = items[itemId];
-                                if (item.inventarioId) {
-                                    updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
-                                }
+                        const eventId = e.target.getAttribute('data-event-id');
+                        const eventList = eventLists[eventId];
+                        
+                        const updates = {};
+                        for (const itemId in eventList.items) {
+                            const item = eventList.items[itemId];
+                            if (item.inventarioId) {
+                                updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
                             }
-                            
-                            if (Object.keys(updates).length > 0) {
-                                database.ref().update(updates);
-                            }
-                            
-                            // Luego eliminar la lista
-                            database.ref(`eventos/${e.target.getAttribute('data-event-id')}`).remove();
-                        });
+                        }
+                        
+                        if (Object.keys(updates).length > 0) {
+                            database.ref().update(updates);
+                        }
+                        
+                        database.ref(`eventos/${eventId}`).remove();
                     }
                 });
+            }
+        }
+        
+        function renderEventListItems(eventId, items) {
+            const eventItemsContainer = document.getElementById(`eventItems-${eventId}`);
+            eventItemsContainer.innerHTML = '';
+            
+            if (Object.keys(items).length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay items en esta lista';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                eventItemsContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            for (const itemId in items) {
+                const item = items[itemId];
+                createEventListItemElement(eventId, itemId, item);
             }
         }
         
         function createEventListItemElement(eventId, itemId, item) {
             const itemElement = document.createElement('div');
             itemElement.className = 'item';
+            itemElement.setAttribute('data-item-id', itemId);
             itemElement.innerHTML = `
                 <div class="item-name">${item.nombre} (${item.cantidad})</div>
                 <div class="item-actions">
-                    <button class="remove-from-event danger" data-event-id="${eventId}" data-item-id="${itemId}" data-inventario-id="${item.inventarioId || ''}" data-cantidad="${item.cantidad}">Quitar</button>
+                    <button class="remove-from-event small danger" data-event-id="${eventId}" data-item-id="${itemId}" data-inventario-id="${item.inventarioId || ''}" data-cantidad="${item.cantidad}">Quitar</button>
                 </div>
             `;
             
@@ -657,37 +919,172 @@
                     const cantidad = parseInt(e.target.getAttribute('data-cantidad'));
                     
                     if (inventarioId) {
-                        // Devolver la cantidad al inventario
                         database.ref(`inventario/${inventarioId}/cantidad`).transaction((current) => {
                             return (current || 0) + cantidad;
                         }).then(() => {
-                            // Eliminar de la lista después de actualizar inventario
                             database.ref(`eventos/${eventId}/items/${itemId}`).remove();
                         });
                     } else {
-                        // Si no tiene referencia, solo eliminar
                         database.ref(`eventos/${eventId}/items/${itemId}`).remove();
                     }
                 }
             });
         }
         
+        function renderNotes() {
+            notesContainer.innerHTML = '';
+            
+            if (Object.keys(notes).length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay notas creadas';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                notesContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            for (const id in notes) {
+                const note = notes[id];
+                createNoteElement(id, note);
+            }
+        }
+        
         function createNoteElement(id, note) {
             const noteElement = document.createElement('div');
             noteElement.className = 'note';
+            noteElement.setAttribute('data-note-id', id);
             noteElement.innerHTML = `
                 <div class="note-title">${note.titulo}</div>
                 <div class="note-content">${note.contenido}</div>
                 <div class="note-actions">
-                    <button class="edit-note" data-note-id="${id}">Editar</button>
-                    <button class="delete-note danger" data-note-id="${id}">Eliminar</button>
+                    <button class="edit-note small" data-note-id="${id}">Editar</button>
+                    <button class="delete-note small danger" data-note-id="${id}">Eliminar</button>
                 </div>
             `;
             
-            notesContainer.appendChild(noteElement);
-            
             noteElement.querySelector('.edit-note').addEventListener('click', () => editNote(id));
             noteElement.querySelector('.delete-note').addEventListener('click', () => deleteNote(id));
+            
+            notesContainer.appendChild(noteElement);
+        }
+        
+        function openCategoriaModal() {
+            document.getElementById('categoriaModalTitle').textContent = 'Nueva Categoría';
+            document.getElementById('categoriaNombre').value = '';
+            document.getElementById('categoriaId').value = '';
+            categoriaModal.style.display = 'flex';
+        }
+        
+        function editCategoria(id) {
+            database.ref(`categorias/${id}`).once('value').then((snapshot) => {
+                const categoria = snapshot.val();
+                document.getElementById('categoriaModalTitle').textContent = 'Editar Categoría';
+                document.getElementById('categoriaNombre').value = categoria.nombre;
+                document.getElementById('categoriaId').value = id;
+                categoriaModal.style.display = 'flex';
+            });
+        }
+        
+        function saveCategoria(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('categoriaId').value;
+            const nombre = document.getElementById('categoriaNombre').value.trim();
+            
+            if (!nombre) return;
+            
+            if (id) {
+                database.ref(`categorias/${id}/nombre`).set(nombre);
+            } else {
+                database.ref('categorias').push({ nombre });
+            }
+            
+            categoriaModal.style.display = 'none';
+        }
+        
+        function deleteCategoria(id) {
+            if (!isAdmin) return;
+            
+            database.ref('categorias').once('value').then((snapshot) => {
+                const categorias = snapshot.val() || {};
+                if (Object.keys(categorias).length <= 1) {
+                    alert('Debe haber al menos una categoría');
+                    return;
+                }
+                
+                if (confirm('¿Eliminar esta categoría y todos sus items?')) {
+                    database.ref('inventario').orderByChild('categoria').equalTo(id).once('value').then((snapshot) => {
+                        const updates = {};
+                        const items = snapshot.val() || {};
+                        
+                        for (const itemId in items) {
+                            updates[`inventario/${itemId}`] = null;
+                        }
+                        
+                        updates[`categorias/${id}`] = null;
+                        
+                        database.ref().update(updates).then(() => {
+                            for (const catId in categorias) {
+                                if (catId !== id) {
+                                    currentCategoria = catId;
+                                    renderizarCategoriaTab();
+                                    break;
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        }
+        
+        function authenticateAdmin(e) {
+            e.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+            
+            if (password === 'GranRetto') {
+                isAdmin = true;
+                userToggle.textContent = 'Cambiar a Usuario';
+                adminAuthModal.style.display = 'none';
+                updateUIForAdmin();
+                initCategoriasInventario();
+            } else {
+                alert('Contraseña incorrecta');
+            }
+        }
+        
+        function toggleUserMode() {
+            if (isAdmin) {
+                isAdmin = false;
+                userToggle.textContent = 'Cambiar a Admin';
+                updateUIForUser();
+                initCategoriasInventario();
+            } else {
+                document.getElementById('adminPassword').value = '';
+                adminAuthModal.style.display = 'flex';
+            }
+        }
+        
+        function updateUIForAdmin() {
+            document.getElementById('addEventList').style.display = 'block';
+            document.getElementById('addNoteBtn').style.display = 'block';
+            renderRepairs();
+        }
+        
+        function updateUIForUser() {
+            document.getElementById('addEventList').style.display = 'block';
+            document.getElementById('addNoteBtn').style.display = 'block';
+            renderRepairs();
+        }
+        
+        function switchTab(e) {
+            const tabId = e.target.getAttribute('data-tab');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
         }
         
         function openItemModal(type) {
@@ -707,6 +1104,7 @@
                 document.getElementById('itemQuantity').value = item.cantidad;
                 document.getElementById('itemId').value = id;
                 document.getElementById('itemType').value = type;
+                document.getElementById('itemCategoria').value = item.categoria || currentCategoria;
                 itemModal.style.display = 'flex';
             });
         }
@@ -715,20 +1113,28 @@
             e.preventDefault();
             
             const id = document.getElementById('itemId').value;
-            const name = document.getElementById('itemName').value;
-            const quantity = document.getElementById('itemQuantity').value;
+            const name = document.getElementById('itemName').value.trim();
+            const quantity = parseInt(document.getElementById('itemQuantity').value);
             const type = document.getElementById('itemType').value;
+            const categoria = document.getElementById('itemCategoria').value || currentCategoria;
+            
+            if (!name || isNaN(quantity)) {
+                alert('Por favor complete todos los campos correctamente');
+                return;
+            }
             
             const itemData = {
                 nombre: name,
                 cantidad: quantity
             };
             
+            if (type === 'inventario') {
+                itemData.categoria = categoria;
+            }
+            
             if (id) {
-                // Actualizar item existente
                 database.ref(`${type}/${id}`).update(itemData);
             } else {
-                // Crear nuevo item
                 database.ref(type).push(itemData);
             }
             
@@ -752,7 +1158,12 @@
             e.preventDefault();
             
             const id = document.getElementById('eventListId').value;
-            const name = document.getElementById('eventListName').value;
+            const name = document.getElementById('eventListName').value.trim();
+            
+            if (!name) {
+                alert('Por favor ingrese un nombre para la lista');
+                return;
+            }
             
             const eventListData = {
                 nombre: name,
@@ -760,10 +1171,8 @@
             };
             
             if (id) {
-                // Actualizar lista existente (solo el nombre)
                 database.ref(`eventos/${id}/nombre`).set(name);
             } else {
-                // Crear nueva lista
                 database.ref('eventos').push(eventListData);
             }
             
@@ -771,27 +1180,45 @@
         }
         
         function openAddToEventModal(eventId) {
-            document.getElementById('currentEventListId').value = eventId;
-            
-            // Llenar el select con items del inventario
             const select = document.getElementById('inventoryItemSelect');
             select.innerHTML = '<option value="">Seleccionar item</option>';
             
-            database.ref('inventario').once('value').then((snapshot) => {
-                const items = snapshot.val() || {};
-                
-                for (const id in items) {
-                    const item = items[id];
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = `${item.nombre} (Disponible: ${item.cantidad})`;
-                    option.setAttribute('data-max', item.cantidad);
-                    option.setAttribute('data-inventario-id', id);
-                    select.appendChild(option);
-                }
+            document.getElementById('currentEventListId').value = eventId;
+            document.getElementById('itemSearch').value = '';
+            
+            const itemsToShow = Object.entries(inventoryItems)
+                .filter(([id, item]) => item.cantidad > 0)
+                .map(([id, item]) => ({ id, ...item }));
+            
+            select.dataset.items = JSON.stringify(itemsToShow);
+            
+            itemsToShow.forEach(({ id, nombre, cantidad }) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${nombre} (Disponible: ${cantidad})`;
+                option.setAttribute('data-max', cantidad);
+                option.setAttribute('data-inventario-id', id);
+                select.appendChild(option);
             });
             
-            document.getElementById('eventItemQuantity').value = '';
+            document.getElementById('itemSearch').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const allItems = JSON.parse(select.dataset.items || '[]');
+                
+                select.innerHTML = '<option value="">Seleccionar item</option>';
+                
+                allItems
+                    .filter(item => item.nombre.toLowerCase().includes(searchTerm))
+                    .forEach(({ id, nombre, cantidad }) => {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = `${nombre} (Disponible: ${cantidad})`;
+                        option.setAttribute('data-max', cantidad);
+                        option.setAttribute('data-inventario-id', id);
+                        select.appendChild(option);
+                    });
+            });
+            
             addToEventModal.style.display = 'flex';
         }
         
@@ -799,43 +1226,50 @@
             e.preventDefault();
             
             const eventId = document.getElementById('currentEventListId').value;
-            const itemId = document.getElementById('inventoryItemSelect').value;
+            const inventarioId = document.getElementById('inventoryItemSelect').value;
             const quantity = parseInt(document.getElementById('eventItemQuantity').value);
+            
+            if (!inventarioId) {
+                alert('Selecciona un item válido');
+                return;
+            }
+            
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('La cantidad debe ser mayor que cero');
+                return;
+            }
+            
             const maxQuantity = parseInt(document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-max'));
-            const inventarioId = document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-inventario-id');
             
             if (quantity > maxQuantity) {
                 alert(`No hay suficiente cantidad disponible. Máximo: ${maxQuantity}`);
                 return;
             }
 
-            // Obtener el item actual del inventario
-            database.ref(`inventario/${inventarioId}`).once('value').then((snapshot) => {
-                const item = snapshot.val();
-                const nuevaCantidad = item.cantidad - quantity;
-
-                // Actualizar el inventario primero
-                database.ref(`inventario/${inventarioId}/cantidad`).set(nuevaCantidad)
-                    .then(() => {
-                        // Solo después de actualizar el inventario, agregar a la lista
-                        const eventItemData = {
-                            nombre: item.nombre,
-                            cantidad: quantity,
-                            inventarioId: inventarioId // Guardamos referencia al item original
-                        };
-                        
-                        return database.ref(`eventos/${eventId}/items`).push(eventItemData);
-                    })
-                    .then(() => {
-                        addToEventModal.style.display = 'none';
-                        // Actualizar automáticamente la vista
-                        loadData();
-                    })
-                    .catch((error) => {
-                        console.error("Error al actualizar:", error);
-                        alert("Ocurrió un error al actualizar el inventario");
-                    });
-            });
+            const item = inventoryItems[inventarioId];
+            
+            const eventItemData = {
+                nombre: item.nombre,
+                cantidad: quantity,
+                inventarioId: inventarioId
+            };
+            
+            // Actualización atómica
+            const updates = {};
+            updates[`inventario/${inventarioId}/cantidad`] = item.cantidad - quantity;
+            const newItemKey = database.ref(`eventos/${eventId}/items`).push().key;
+            updates[`eventos/${eventId}/items/${newItemKey}`] = eventItemData;
+            
+            database.ref().update(updates)
+                .then(() => {
+                    document.getElementById('inventoryItemSelect').value = "";
+                    document.getElementById('eventItemQuantity').value = "";
+                    addToEventModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    console.error("Error al actualizar:", error);
+                    alert("Ocurrió un error al actualizar el inventario");
+                });
         }
         
         function openNoteModal() {
@@ -847,22 +1281,25 @@
         }
         
         function editNote(id) {
-            database.ref(`notas/${id}`).once('value').then((snapshot) => {
-                const note = snapshot.val();
-                document.getElementById('noteModalTitle').textContent = 'Editar Nota';
-                document.getElementById('noteTitle').value = note.titulo;
-                document.getElementById('noteContent').value = note.contenido;
-                document.getElementById('noteId').value = id;
-                noteModal.style.display = 'flex';
-            });
+            const note = notes[id];
+            document.getElementById('noteModalTitle').textContent = 'Editar Nota';
+            document.getElementById('noteTitle').value = note.titulo;
+            document.getElementById('noteContent').value = note.contenido;
+            document.getElementById('noteId').value = id;
+            noteModal.style.display = 'flex';
         }
         
         function saveNote(e) {
             e.preventDefault();
             
             const id = document.getElementById('noteId').value;
-            const title = document.getElementById('noteTitle').value;
-            const content = document.getElementById('noteContent').value;
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            
+            if (!title || !content) {
+                alert('Por favor complete todos los campos');
+                return;
+            }
             
             const noteData = {
                 titulo: title,
@@ -870,10 +1307,8 @@
             };
             
             if (id) {
-                // Actualizar nota existente
                 database.ref(`notas/${id}`).update(noteData);
             } else {
-                // Crear nueva nota
                 database.ref('notas').push(noteData);
             }
             
@@ -886,19 +1321,23 @@
             }
         }
         
-        function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
+        function estaItemEnUso(itemId) {
+            return new Promise((resolve) => {
+                let enUso = false;
                 
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                        installBtn.style.display = 'none';
+                for (const listId in eventLists) {
+                    const items = eventLists[listId].items || {};
+                    for (const id in items) {
+                        if (items[id].inventarioId === itemId) {
+                            enUso = true;
+                            break;
+                        }
                     }
-                    
-                    deferredPrompt = null;
-                });
-            }
+                    if (enUso) break;
+                }
+                
+                resolve(enUso);
+            });
         }
     </script>
 </body>

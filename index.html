@@ -418,6 +418,7 @@
     
     <div class="tabs">
         <div class="tab active" data-tab="inventario">Inventario Timing</div>
+        <div class="tab" data-tab="bodega">Inventario Bodega</div>
         <div class="tab" data-tab="reparaciones">Reparaciones</div>
         <div class="tab" data-tab="eventos">Listas de Evento</div>
         <div class="tab" data-tab="notas">Notas</div>
@@ -426,6 +427,11 @@
     <div class="tab-content active" id="inventario">
         <div class="categorias-container" id="categoriasContainer"></div>
         <div class="item-list" id="inventoryList"></div>
+    </div>
+    
+    <div class="tab-content" id="bodega">
+        <div class="categorias-container" id="categoriasBodegaContainer"></div>
+        <div class="item-list" id="bodegaList"></div>
     </div>
     
     <div class="tab-content" id="reparaciones">
@@ -467,6 +473,7 @@
             <form class="modal-form" id="categoriaForm">
                 <input type="text" id="categoriaNombre" placeholder="Nombre de la categoría" required>
                 <input type="hidden" id="categoriaId">
+                <input type="hidden" id="categoriaTipo" value="inventario">
                 <button type="submit">Guardar</button>
             </form>
         </div>
@@ -549,7 +556,9 @@
         // Variables de estado
         let isAdmin = false;
         let currentCategoria = null;
+        let currentCategoriaBodega = null;
         let inventoryItems = {};
+        let bodegaItems = {};
         let repairItems = {};
         let eventLists = {};
         let notes = {};
@@ -559,7 +568,9 @@
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const categoriasContainer = document.getElementById('categoriasContainer');
+        const categoriasBodegaContainer = document.getElementById('categoriasBodegaContainer');
         const inventoryList = document.getElementById('inventoryList');
+        const bodegaList = document.getElementById('bodegaList');
         const repairsList = document.getElementById('repairsList');
         const eventListsContainer = document.getElementById('eventListsContainer');
         const notesContainer = document.getElementById('notesContainer');
@@ -596,11 +607,14 @@
             updateUIForUser();
             setupFirebaseListeners();
             initCategoriasInventario();
+            initCategoriasBodega();
         }
         
         function setupFirebaseListeners() {
             database.ref('categorias').on('value', handleCategoriasUpdate);
+            database.ref('categoriasBodega').on('value', handleCategoriasBodegaUpdate);
             database.ref('inventario').on('value', handleInventoryUpdate);
+            database.ref('bodega').on('value', handleBodegaUpdate);
             database.ref('reparaciones').on('value', handleRepairsUpdate);
             database.ref('eventos').on('value', handleEventListsUpdate);
             database.ref('notas').on('value', handleNotesUpdate);
@@ -642,12 +656,12 @@
                 if (isAdmin) {
                     tab.querySelector('.edit-categoria-btn').addEventListener('click', (e) => {
                         e.stopPropagation();
-                        editCategoria(id);
+                        editCategoria(id, 'inventario');
                     });
                     
                     tab.querySelector('.delete-categoria-btn').addEventListener('click', (e) => {
                         e.stopPropagation();
-                        deleteCategoria(id);
+                        deleteCategoria(id, 'inventario');
                     });
                 }
                 
@@ -662,9 +676,70 @@
             renderInventoryItems();
         }
         
+        function handleCategoriasBodegaUpdate(snapshot) {
+            const categorias = snapshot.val() || {};
+            const tabsContainer = document.getElementById('categoriasBodegaTabs');
+            
+            if (Object.keys(categorias).length === 0) {
+                database.ref('categoriasBodega').push({ nombre: 'General' });
+                return;
+            }
+            
+            tabsContainer.innerHTML = '';
+            let firstCategoria = null;
+            
+            for (const id in categorias) {
+                if (!firstCategoria) firstCategoria = id;
+                
+                const categoria = categorias[id];
+                const tab = document.createElement('div');
+                tab.className = `categoria-tab ${currentCategoriaBodega === id ? 'active' : ''}`;
+                tab.setAttribute('data-categoria-id', id);
+                tab.innerHTML = `
+                    ${categoria.nombre}
+                    ${isAdmin ? `
+                        <button class="edit-categoria-btn" data-id="${id}">✏️</button>
+                        <button class="delete-categoria-btn" data-id="${id}">🗑️</button>
+                    ` : ''}
+                `;
+                
+                tab.addEventListener('click', () => {
+                    currentCategoriaBodega = id;
+                    renderizarCategoriaBodegaTab();
+                    renderBodegaItems();
+                });
+                
+                if (isAdmin) {
+                    tab.querySelector('.edit-categoria-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editCategoria(id, 'bodega');
+                    });
+                    
+                    tab.querySelector('.delete-categoria-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteCategoria(id, 'bodega');
+                    });
+                }
+                
+                tabsContainer.appendChild(tab);
+            }
+            
+            if (!currentCategoriaBodega && firstCategoria) {
+                currentCategoriaBodega = firstCategoria;
+                renderizarCategoriaBodegaTab();
+            }
+            
+            renderBodegaItems();
+        }
+        
         function handleInventoryUpdate(snapshot) {
             inventoryItems = snapshot.val() || {};
             renderInventoryItems();
+        }
+        
+        function handleBodegaUpdate(snapshot) {
+            bodegaItems = snapshot.val() || {};
+            renderBodegaItems();
         }
         
         function handleRepairsUpdate(snapshot) {
@@ -692,15 +767,43 @@
             `;
             
             if (isAdmin) {
-                document.getElementById('addCategoriaBtn').addEventListener('click', openCategoriaModal);
+                document.getElementById('addCategoriaBtn').addEventListener('click', () => {
+                    document.getElementById('categoriaTipo').value = 'inventario';
+                    openCategoriaModal();
+                });
+            }
+        }
+        
+        function initCategoriasBodega() {
+            categoriasBodegaContainer.innerHTML = `
+                <div class="categorias-header">
+                    <h2>Inventario General de Bodega</h2>
+                    ${isAdmin ? '<button id="addCategoriaBodegaBtn" class="btn-categoria">+ Categoría</button>' : ''}
+                </div>
+                <div class="categorias-tabs" id="categoriasBodegaTabs"></div>
+            `;
+            
+            if (isAdmin) {
+                document.getElementById('addCategoriaBodegaBtn').addEventListener('click', () => {
+                    document.getElementById('categoriaTipo').value = 'bodega';
+                    openCategoriaModal();
+                });
             }
         }
         
         function renderizarCategoriaTab() {
-            const tabs = document.querySelectorAll('.categoria-tab');
+            const tabs = document.querySelectorAll('#categoriasTabs .categoria-tab');
             tabs.forEach(tab => {
                 const categoriaId = tab.getAttribute('data-categoria-id');
                 tab.classList.toggle('active', currentCategoria === categoriaId);
+            });
+        }
+        
+        function renderizarCategoriaBodegaTab() {
+            const tabs = document.querySelectorAll('#categoriasBodegaTabs .categoria-tab');
+            tabs.forEach(tab => {
+                const categoriaId = tab.getAttribute('data-categoria-id');
+                tab.classList.toggle('active', currentCategoriaBodega === categoriaId);
             });
         }
         
@@ -733,16 +836,49 @@
             }
             
             itemsInCategory.forEach(([id, item]) => {
-                createInventoryItemElement(id, item);
+                createInventoryItemElement(id, item, 'inventario');
             });
         }
         
-        function createInventoryItemElement(id, item) {
+        function renderBodegaItems() {
+            if (!currentCategoriaBodega) return;
+            
+            bodegaList.innerHTML = '';
+            
+            if (isAdmin) {
+                const addItemBtn = document.createElement('button');
+                addItemBtn.textContent = 'Agregar Item';
+                addItemBtn.addEventListener('click', () => {
+                    document.getElementById('itemCategoria').value = currentCategoriaBodega;
+                    openItemModal('bodega');
+                });
+                bodegaList.appendChild(addItemBtn);
+            }
+            
+            const itemsInCategory = Object.entries(bodegaItems)
+                .filter(([id, item]) => item.categoria === currentCategoriaBodega);
+            
+            if (itemsInCategory.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No hay items en esta categoría';
+                emptyMessage.style.padding = '1rem';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--gris-oscuro)';
+                bodegaList.appendChild(emptyMessage);
+                return;
+            }
+            
+            itemsInCategory.forEach(([id, item]) => {
+                createInventoryItemElement(id, item, 'bodega');
+            });
+        }
+        
+        function createInventoryItemElement(id, item, type) {
             const itemElement = document.createElement('div');
             itemElement.className = 'item';
             itemElement.setAttribute('data-item-id', id);
             
-            estaItemEnUso(id).then(enUso => {
+            estaItemEnUso(id, type).then(enUso => {
                 itemElement.innerHTML = `
                     <div class="item-name">
                         ${item.nombre}
@@ -751,21 +887,25 @@
                     <div class="item-actions">
                         <span>Cantidad: ${item.cantidad}</span>
                         ${isAdmin ? `
-                            <button class="edit-item small" data-id="${id}" data-type="inventario">Editar</button>
-                            <button class="delete-item small danger" data-id="${id}" data-type="inventario">Eliminar</button>
+                            <button class="edit-item small" data-id="${id}" data-type="${type}">Editar</button>
+                            <button class="delete-item small danger" data-id="${id}" data-type="${type}">Eliminar</button>
                         ` : ''}
                     </div>
                 `;
                 
                 if (isAdmin) {
                     itemElement.querySelector('.edit-item').addEventListener('click', () => {
-                        document.getElementById('itemCategoria').value = currentCategoria;
-                        editItem(id, 'inventario');
+                        document.getElementById('itemCategoria').value = type === 'inventario' ? currentCategoria : currentCategoriaBodega;
+                        editItem(id, type);
                     });
-                    itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, 'inventario'));
+                    itemElement.querySelector('.delete-item').addEventListener('click', () => deleteItem(id, type));
                 }
                 
-                inventoryList.appendChild(itemElement);
+                if (type === 'inventario') {
+                    inventoryList.appendChild(itemElement);
+                } else {
+                    bodegaList.appendChild(itemElement);
+                }
             });
         }
         
@@ -868,6 +1008,9 @@
                             if (item.inventarioId) {
                                 updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
                             }
+                            if (item.bodegaId) {
+                                updates[`bodega/${item.bodegaId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
+                            }
                         }
                         
                         if (Object.keys(updates).length > 0) {
@@ -907,7 +1050,7 @@
             itemElement.innerHTML = `
                 <div class="item-name">${item.nombre} (${item.cantidad})</div>
                 <div class="item-actions">
-                    <button class="remove-from-event small danger" data-event-id="${eventId}" data-item-id="${itemId}" data-inventario-id="${item.inventarioId || ''}" data-cantidad="${item.cantidad}">Quitar</button>
+                    <button class="remove-from-event small danger" data-event-id="${eventId}" data-item-id="${itemId}" data-inventario-id="${item.inventarioId || ''}" data-bodega-id="${item.bodegaId || ''}" data-cantidad="${item.cantidad}">Quitar</button>
                 </div>
             `;
             
@@ -916,12 +1059,19 @@
             itemElement.querySelector('.remove-from-event').addEventListener('click', (e) => {
                 if (confirm('¿Estás seguro de quitar este item de la lista?')) {
                     const inventarioId = e.target.getAttribute('data-inventario-id');
+                    const bodegaId = e.target.getAttribute('data-bodega-id');
                     const cantidad = parseInt(e.target.getAttribute('data-cantidad'));
                     
+                    const updates = {};
                     if (inventarioId) {
-                        database.ref(`inventario/${inventarioId}/cantidad`).transaction((current) => {
-                            return (current || 0) + cantidad;
-                        }).then(() => {
+                        updates[`inventario/${inventarioId}/cantidad`] = firebase.database.ServerValue.increment(cantidad);
+                    }
+                    if (bodegaId) {
+                        updates[`bodega/${bodegaId}/cantidad`] = firebase.database.ServerValue.increment(cantidad);
+                    }
+                    
+                    if (Object.keys(updates).length > 0) {
+                        database.ref().update(updates).then(() => {
                             database.ref(`eventos/${eventId}/items/${itemId}`).remove();
                         });
                     } else {
@@ -957,14 +1107,18 @@
             noteElement.innerHTML = `
                 <div class="note-title">${note.titulo}</div>
                 <div class="note-content">${note.contenido}</div>
+                ${isAdmin ? `
                 <div class="note-actions">
                     <button class="edit-note small" data-note-id="${id}">Editar</button>
                     <button class="delete-note small danger" data-note-id="${id}">Eliminar</button>
                 </div>
+                ` : ''}
             `;
             
-            noteElement.querySelector('.edit-note').addEventListener('click', () => editNote(id));
-            noteElement.querySelector('.delete-note').addEventListener('click', () => deleteNote(id));
+            if (isAdmin) {
+                noteElement.querySelector('.edit-note').addEventListener('click', () => editNote(id));
+                noteElement.querySelector('.delete-note').addEventListener('click', () => deleteNote(id));
+            }
             
             notesContainer.appendChild(noteElement);
         }
@@ -976,12 +1130,13 @@
             categoriaModal.style.display = 'flex';
         }
         
-        function editCategoria(id) {
-            database.ref(`categorias/${id}`).once('value').then((snapshot) => {
+        function editCategoria(id, tipo) {
+            database.ref(`categorias${tipo === 'bodega' ? 'Bodega' : ''}/${id}`).once('value').then((snapshot) => {
                 const categoria = snapshot.val();
                 document.getElementById('categoriaModalTitle').textContent = 'Editar Categoría';
                 document.getElementById('categoriaNombre').value = categoria.nombre;
                 document.getElementById('categoriaId').value = id;
+                document.getElementById('categoriaTipo').value = tipo;
                 categoriaModal.style.display = 'flex';
             });
         }
@@ -991,22 +1146,28 @@
             
             const id = document.getElementById('categoriaId').value;
             const nombre = document.getElementById('categoriaNombre').value.trim();
+            const tipo = document.getElementById('categoriaTipo').value;
             
             if (!nombre) return;
             
+            const refPath = tipo === 'bodega' ? 'categoriasBodega' : 'categorias';
+            
             if (id) {
-                database.ref(`categorias/${id}/nombre`).set(nombre);
+                database.ref(`${refPath}/${id}/nombre`).set(nombre);
             } else {
-                database.ref('categorias').push({ nombre });
+                database.ref(refPath).push({ nombre });
             }
             
             categoriaModal.style.display = 'none';
         }
         
-        function deleteCategoria(id) {
+        function deleteCategoria(id, tipo) {
             if (!isAdmin) return;
             
-            database.ref('categorias').once('value').then((snapshot) => {
+            const refPath = tipo === 'bodega' ? 'categoriasBodega' : 'categorias';
+            const itemRef = tipo === 'bodega' ? 'bodega' : 'inventario';
+            
+            database.ref(refPath).once('value').then((snapshot) => {
                 const categorias = snapshot.val() || {};
                 if (Object.keys(categorias).length <= 1) {
                     alert('Debe haber al menos una categoría');
@@ -1014,21 +1175,26 @@
                 }
                 
                 if (confirm('¿Eliminar esta categoría y todos sus items?')) {
-                    database.ref('inventario').orderByChild('categoria').equalTo(id).once('value').then((snapshot) => {
+                    database.ref(itemRef).orderByChild('categoria').equalTo(id).once('value').then((snapshot) => {
                         const updates = {};
                         const items = snapshot.val() || {};
                         
                         for (const itemId in items) {
-                            updates[`inventario/${itemId}`] = null;
+                            updates[`${itemRef}/${itemId}`] = null;
                         }
                         
-                        updates[`categorias/${id}`] = null;
+                        updates[`${refPath}/${id}`] = null;
                         
                         database.ref().update(updates).then(() => {
                             for (const catId in categorias) {
                                 if (catId !== id) {
-                                    currentCategoria = catId;
-                                    renderizarCategoriaTab();
+                                    if (tipo === 'bodega') {
+                                        currentCategoriaBodega = catId;
+                                        renderizarCategoriaBodegaTab();
+                                    } else {
+                                        currentCategoria = catId;
+                                        renderizarCategoriaTab();
+                                    }
                                     break;
                                 }
                             }
@@ -1048,6 +1214,7 @@
                 adminAuthModal.style.display = 'none';
                 updateUIForAdmin();
                 initCategoriasInventario();
+                initCategoriasBodega();
             } else {
                 alert('Contraseña incorrecta');
             }
@@ -1059,6 +1226,7 @@
                 userToggle.textContent = 'Cambiar a Admin';
                 updateUIForUser();
                 initCategoriasInventario();
+                initCategoriasBodega();
             } else {
                 document.getElementById('adminPassword').value = '';
                 adminAuthModal.style.display = 'flex';
@@ -1088,7 +1256,10 @@
         }
         
         function openItemModal(type) {
-            document.getElementById('modalTitle').textContent = type === 'inventario' ? 'Agregar Item al Inventario' : 'Agregar Item a Reparaciones';
+            document.getElementById('modalTitle').textContent = 
+                type === 'inventario' ? 'Agregar Item al Inventario' : 
+                type === 'bodega' ? 'Agregar Item a Bodega' : 
+                'Agregar Item a Reparaciones';
             document.getElementById('itemName').value = '';
             document.getElementById('itemQuantity').value = '';
             document.getElementById('itemId').value = '';
@@ -1104,7 +1275,7 @@
                 document.getElementById('itemQuantity').value = item.cantidad;
                 document.getElementById('itemId').value = id;
                 document.getElementById('itemType').value = type;
-                document.getElementById('itemCategoria').value = item.categoria || currentCategoria;
+                document.getElementById('itemCategoria').value = item.categoria || (type === 'inventario' ? currentCategoria : currentCategoriaBodega);
                 itemModal.style.display = 'flex';
             });
         }
@@ -1116,7 +1287,9 @@
             const name = document.getElementById('itemName').value.trim();
             const quantity = parseInt(document.getElementById('itemQuantity').value);
             const type = document.getElementById('itemType').value;
-            const categoria = document.getElementById('itemCategoria').value || currentCategoria;
+            const categoria = document.getElementById('itemCategoria').value || 
+                              (type === 'inventario' ? currentCategoria : 
+                              type === 'bodega' ? currentCategoriaBodega : null);
             
             if (!name || isNaN(quantity)) {
                 alert('Por favor complete todos los campos correctamente');
@@ -1128,7 +1301,7 @@
                 cantidad: quantity
             };
             
-            if (type === 'inventario') {
+            if (type === 'inventario' || type === 'bodega') {
                 itemData.categoria = categoria;
             }
             
@@ -1186,18 +1359,27 @@
             document.getElementById('currentEventListId').value = eventId;
             document.getElementById('itemSearch').value = '';
             
-            const itemsToShow = Object.entries(inventoryItems)
+            // Combinar items de inventario y bodega
+            const inventoryItemsList = Object.entries(inventoryItems)
                 .filter(([id, item]) => item.cantidad > 0)
-                .map(([id, item]) => ({ id, ...item }));
+                .map(([id, item]) => ({ id, ...item, type: 'inventario' }));
+                
+            const bodegaItemsList = Object.entries(bodegaItems)
+                .filter(([id, item]) => item.cantidad > 0)
+                .map(([id, item]) => ({ id, ...item, type: 'bodega' }));
+                
+            const itemsToShow = [...inventoryItemsList, ...bodegaItemsList];
             
             select.dataset.items = JSON.stringify(itemsToShow);
             
-            itemsToShow.forEach(({ id, nombre, cantidad }) => {
+            itemsToShow.forEach(({ id, nombre, cantidad, type }) => {
                 const option = document.createElement('option');
                 option.value = id;
-                option.textContent = `${nombre} (Disponible: ${cantidad})`;
+                option.textContent = `${nombre} (${type === 'inventario' ? 'Timing' : 'Bodega'}, Disponible: ${cantidad})`;
                 option.setAttribute('data-max', cantidad);
-                option.setAttribute('data-inventario-id', id);
+                option.setAttribute('data-inventario-id', type === 'inventario' ? id : '');
+                option.setAttribute('data-bodega-id', type === 'bodega' ? id : '');
+                option.setAttribute('data-type', type);
                 select.appendChild(option);
             });
             
@@ -1209,12 +1391,14 @@
                 
                 allItems
                     .filter(item => item.nombre.toLowerCase().includes(searchTerm))
-                    .forEach(({ id, nombre, cantidad }) => {
+                    .forEach(({ id, nombre, cantidad, type }) => {
                         const option = document.createElement('option');
                         option.value = id;
-                        option.textContent = `${nombre} (Disponible: ${cantidad})`;
+                        option.textContent = `${nombre} (${type === 'inventario' ? 'Timing' : 'Bodega'}, Disponible: ${cantidad})`;
                         option.setAttribute('data-max', cantidad);
-                        option.setAttribute('data-inventario-id', id);
+                        option.setAttribute('data-inventario-id', type === 'inventario' ? id : '');
+                        option.setAttribute('data-bodega-id', type === 'bodega' ? id : '');
+                        option.setAttribute('data-type', type);
                         select.appendChild(option);
                     });
             });
@@ -1226,10 +1410,11 @@
             e.preventDefault();
             
             const eventId = document.getElementById('currentEventListId').value;
-            const inventarioId = document.getElementById('inventoryItemSelect').value;
+            const itemId = document.getElementById('inventoryItemSelect').value;
             const quantity = parseInt(document.getElementById('eventItemQuantity').value);
+            const selectedOption = document.getElementById('inventoryItemSelect').selectedOptions[0];
             
-            if (!inventarioId) {
+            if (!itemId) {
                 alert('Selecciona un item válido');
                 return;
             }
@@ -1239,24 +1424,30 @@
                 return;
             }
             
-            const maxQuantity = parseInt(document.getElementById('inventoryItemSelect').selectedOptions[0].getAttribute('data-max'));
+            const maxQuantity = parseInt(selectedOption.getAttribute('data-max'));
+            const type = selectedOption.getAttribute('data-type');
             
             if (quantity > maxQuantity) {
                 alert(`No hay suficiente cantidad disponible. Máximo: ${maxQuantity}`);
                 return;
             }
 
-            const item = inventoryItems[inventarioId];
+            const item = type === 'inventario' ? inventoryItems[itemId] : bodegaItems[itemId];
             
             const eventItemData = {
                 nombre: item.nombre,
-                cantidad: quantity,
-                inventarioId: inventarioId
+                cantidad: quantity
             };
+            
+            if (type === 'inventario') {
+                eventItemData.inventarioId = itemId;
+            } else {
+                eventItemData.bodegaId = itemId;
+            }
             
             // Actualización atómica
             const updates = {};
-            updates[`inventario/${inventarioId}/cantidad`] = item.cantidad - quantity;
+            updates[`${type}/${itemId}/cantidad`] = item.cantidad - quantity;
             const newItemKey = database.ref(`eventos/${eventId}/items`).push().key;
             updates[`eventos/${eventId}/items/${newItemKey}`] = eventItemData;
             
@@ -1321,14 +1512,15 @@
             }
         }
         
-        function estaItemEnUso(itemId) {
+        function estaItemEnUso(itemId, type) {
             return new Promise((resolve) => {
                 let enUso = false;
                 
                 for (const listId in eventLists) {
                     const items = eventLists[listId].items || {};
                     for (const id in items) {
-                        if (items[id].inventarioId === itemId) {
+                        if ((type === 'inventario' && items[id].inventarioId === itemId) || 
+                            (type === 'bodega' && items[id].bodegaId === itemId)) {
                             enUso = true;
                             break;
                         }

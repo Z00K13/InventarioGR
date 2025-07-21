@@ -367,6 +367,43 @@
             transform: translateY(-50%);
             color: var(--gris-oscuro);
         }
+
+        /* Nuevos estilos para la función de PDF */
+        .event-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .print-event-list {
+            background-color: var(--amarillo);
+            color: var(--negro);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .print-event-list:hover {
+            opacity: 0.9;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-section, .print-section * {
+                visibility: visible;
+            }
+            .print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
         
         @media (max-width: 768px) {
             .tab {
@@ -406,6 +443,12 @@
             
             .modal-content {
                 padding: 1rem;
+            }
+
+            .event-list-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
@@ -536,6 +579,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <script>
         // Configuración de Firebase
@@ -982,7 +1027,10 @@
             eventListElement.className = 'event-list';
             eventListElement.setAttribute('data-event-id', id);
             eventListElement.innerHTML = `
-                <h3>${eventList.nombre}</h3>
+                <div class="event-list-header">
+                    <h3>${eventList.nombre}</h3>
+                    <button class="print-event-list" data-event-id="${id}">Imprimir PDF</button>
+                </div>
                 <div class="item-list" id="eventItems-${id}"></div>
                 <button class="add-to-event" data-event-id="${id}">Agregar Item</button>
                 ${isAdmin ? `<button class="delete-event-list danger" data-event-id="${id}">Eliminar Lista</button>` : ''}
@@ -994,6 +1042,10 @@
             
             eventListElement.querySelector('.add-to-event').addEventListener('click', (e) => {
                 openAddToEventModal(e.target.getAttribute('data-event-id'));
+            });
+            
+            eventListElement.querySelector('.print-event-list').addEventListener('click', (e) => {
+                generateEventListPDF(e.target.getAttribute('data-event-id'));
             });
             
             if (isAdmin) {
@@ -1078,6 +1130,73 @@
                         database.ref(`eventos/${eventId}/items/${itemId}`).remove();
                     }
                 }
+            });
+        }
+        
+        function generateEventListPDF(eventId) {
+            const eventList = eventLists[eventId];
+            if (!eventList) return;
+            
+            // Crear un elemento temporal para la impresión
+            const printSection = document.createElement('div');
+            printSection.className = 'print-section';
+            printSection.style.padding = '20px';
+            printSection.style.backgroundColor = 'white';
+            printSection.style.color = 'black';
+            
+            // Crear el contenido del PDF
+            printSection.innerHTML = `
+                <h2 style="text-align: center; color: #1E88E5; margin-bottom: 20px;">${eventList.nombre}</h2>
+                <h3 style="border-bottom: 2px solid #1E88E5; padding-bottom: 5px; margin-bottom: 15px;">Lista de Items</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #1E88E5; color: white;">
+                            <th style="padding: 10px; text-align: left;">Item</th>
+                            <th style="padding: 10px; text-align: center;">Cantidad</th>
+                            <th style="padding: 10px; text-align: left;">Ubicación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.values(eventList.items || {}).map(item => `
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 10px;">${item.nombre}</td>
+                                <td style="padding: 10px; text-align: center;">${item.cantidad}</td>
+                                <td style="padding: 10px;">${item.inventarioId ? 'Timing' : 'Bodega'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 30px; font-size: 0.9em; color: #757575;">
+                    <p>Fecha de generación: ${new Date().toLocaleDateString()}</p>
+                    <p>Sistema de Inventarios GranRetto</p>
+                </div>
+            `;
+            
+            // Agregar temporalmente al cuerpo del documento
+            document.body.appendChild(printSection);
+            
+            // Generar el PDF
+            html2canvas(printSection, {
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm'
+                });
+                
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Lista_Evento_${eventList.nombre.replace(/ /g, '_')}.pdf`);
+                
+                // Eliminar el elemento temporal
+                document.body.removeChild(printSection);
             });
         }
         

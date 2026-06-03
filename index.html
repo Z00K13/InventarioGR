@@ -1580,7 +1580,7 @@
                 <div class="item-list" id="eventItems-${id}"></div>
                 <div class="event-list-actions">
                     <button class="btn btn-sm add-to-event" data-event-id="${id}">+ Agregar Item</button>
-                    ${isAdmin ? `<button class="btn btn-sm btn-danger delete-event-list" data-event-id="${id}">Eliminar Lista</button>` : ''}
+                    <button class="btn btn-sm btn-danger delete-event-list" data-event-id="${id}">Eliminar Lista</button>
                 </div>
             `;
             
@@ -1602,33 +1602,31 @@
                 eventDetailsModal.style.display = 'flex';
             });
             
-            if (isAdmin) {
-                eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
-                    if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
-                        const eventId = e.target.getAttribute('data-event-id');
-                        const eventList = eventLists[eventId];
-                        
-                        const updates = {};
-                        for (const itemId in eventList.items) {
-                            const item = eventList.items[itemId];
-                            if (!item.esConsumible) {
-                                if (item.inventarioId) {
-                                    updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
-                                }
-                                if (item.bodegaId) {
-                                    updates[`bodega/${item.bodegaId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
-                                }
+            eventListElement.querySelector('.delete-event-list').addEventListener('click', (e) => {
+                if (confirm('¿Estás seguro de eliminar esta lista de evento?')) {
+                    const eventId = e.target.getAttribute('data-event-id');
+                    const eventList = eventLists[eventId];
+                    
+                    const updates = {};
+                    for (const itemId in eventList.items) {
+                        const item = eventList.items[itemId];
+                        if (!item.esConsumible) {
+                            if (item.inventarioId) {
+                                updates[`inventario/${item.inventarioId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
+                            }
+                            if (item.bodegaId) {
+                                updates[`bodega/${item.bodegaId}/cantidad`] = firebase.database.ServerValue.increment(item.cantidad);
                             }
                         }
-                        
-                        if (Object.keys(updates).length > 0) {
-                            database.ref().update(updates);
-                        }
-                        
-                        database.ref(`eventos/${eventId}`).remove();
                     }
-                });
-            }
+                    
+                    if (Object.keys(updates).length > 0) {
+                        database.ref().update(updates);
+                    }
+                    
+                    database.ref(`eventos/${eventId}`).remove();
+                }
+            });
         }
         
         function renderEventListItems(eventId, items) {
@@ -1713,7 +1711,7 @@
             
             // Formatear fechas
             const formatDate = (dateString) => {
-                if (!dateString) return '';
+                if (!dateString) return 'No especificada';
                 const date = new Date(dateString);
                 return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
             };
@@ -1724,102 +1722,211 @@
             // Crear el PDF
             const pdf = new jspdf.jsPDF({
                 orientation: 'portrait',
-                unit: 'mm'
+                unit: 'mm',
+                format: 'a4'
             });
             
             // Configuración
             const pageWidth = pdf.internal.pageSize.getWidth();
-            const margin = 15;
-            const lineHeight = 7;
-            let yPos = margin;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
+            let yPos = 35;
+            let pageNum = 1;
             
-            // Función para agregar nueva página si es necesario
+            // Función para dibujar encabezado de página (cabecera negra con franja tricolor)
+            const drawHeader = () => {
+                // Barra superior oscura
+                pdf.setFillColor(18, 18, 18);
+                pdf.rect(0, 0, pageWidth, 20, 'F');
+                
+                // Franja tricolor de marca
+                // Azul
+                pdf.setFillColor(0, 85, 164);
+                pdf.rect(0, 20, pageWidth / 3, 2, 'F');
+                // Amarillo
+                pdf.setFillColor(255, 209, 0);
+                pdf.rect(pageWidth / 3, 20, pageWidth / 3, 2, 'F');
+                // Rojo
+                pdf.setFillColor(239, 51, 64);
+                pdf.rect((pageWidth / 3) * 2, 20, (pageWidth / 3) + 1, 2, 'F');
+                
+                // Texto de marca en encabezado
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('GRAN RETTO', 15, 13);
+                
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(255, 209, 0);
+                pdf.text('•   INVENTARIO DE EVENTO', 45, 13);
+            };
+            
+            // Función para dibujar pie de página
+            const drawFooter = (pNum) => {
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(120, 120, 120);
+                
+                // Línea separadora
+                pdf.setDrawColor(226, 232, 240);
+                pdf.setLineWidth(0.3);
+                pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+                
+                pdf.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, margin, pageHeight - 10);
+                pdf.text(`Página ${pNum}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+                pdf.text('Sistema de Control de Inventarios GranRetto', pageWidth / 2, pageHeight - 10, { align: 'center' });
+            };
+            
+            // Función para dibujar encabezado de tabla
+            const drawTableHeader = (y) => {
+                pdf.setFillColor(0, 85, 164); // Gran Retto Blue
+                pdf.rect(margin, y, pageWidth - margin * 2, 8, 'F');
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('ARTÍCULO', margin + 3, y + 5.5);
+                pdf.text('TIPO', margin + 85, y + 5.5);
+                pdf.text('CANTIDAD', margin + 125, y + 5.5, { align: 'right' });
+                pdf.text('SALIDA', margin + 140, y + 5.5, { align: 'center' });
+                pdf.text('RETORNO', margin + 160, y + 5.5, { align: 'center' });
+            };
+            
+            // Control de saltos de página para las filas de la tabla
             const checkPageBreak = (neededSpace) => {
-                if (yPos + neededSpace > pdf.internal.pageSize.getHeight() - margin) {
+                if (yPos + neededSpace > pageHeight - 25) {
+                    drawFooter(pageNum);
                     pdf.addPage();
-                    yPos = margin;
+                    pageNum++;
+                    yPos = margin + 10;
+                    
+                    // En nuevas páginas redibujamos el encabezado de tabla
+                    drawTableHeader(yPos);
+                    yPos += 8;
                 }
             };
             
-            // Encabezado
-            pdf.setFontSize(18);
-            pdf.setTextColor(0, 85, 164); // Gran Retto Blue
-            pdf.text(eventName, pageWidth / 2, yPos, { align: 'center' });
-            yPos += lineHeight * 1.5;
+            // --- PÁGINA 1: Inicialización ---
+            drawHeader();
             
-            pdf.setFontSize(12);
-            pdf.setTextColor(0, 0, 0); // Negro
-            pdf.text(`Team Leader: ${teamLeader}`, margin, yPos);
-            yPos += lineHeight;
+            // Título del evento
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(16);
+            pdf.setTextColor(0, 85, 164); // Azul
+            pdf.text(eventName.toUpperCase(), margin, 30);
             
-            pdf.text(`Fecha de Salida: ${formattedSalida}`, margin, yPos);
-            pdf.text(`Fecha de Regreso: ${formattedRegreso}`, pageWidth / 2 + 20, yPos);
-            yPos += lineHeight * 1.5;
+            // Subrayado del título
+            pdf.setDrawColor(0, 85, 164);
+            pdf.setLineWidth(0.8);
+            pdf.line(margin, 33, pageWidth - margin, 33);
             
-            // Tabla de items
-            pdf.setFontSize(14);
-            pdf.setTextColor(0, 85, 164); // Gran Retto Blue
-            pdf.text('Lista de Items', margin, yPos);
-            yPos += lineHeight;
+            // Bloque contenedor de Metadatos (Responsable, Fechas)
+            pdf.setFillColor(248, 250, 252); // Fondo gris muy claro
+            pdf.setDrawColor(226, 232, 240); // Borde
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(margin, 38, pageWidth - margin * 2, 22, 2, 2, 'FD');
             
+            // Etiquetas de metadatos
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(108, 117, 125); // Gris medio
+            pdf.text('RESPONSABLE DEL EVENTO', margin + 5, 44);
+            pdf.text('FECHA SALIDA', margin + 95, 44);
+            pdf.text('FECHA REGRESO', margin + 135, 44);
+            
+            // Valores de metadatos
+            pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(10);
-            pdf.setTextColor(0, 0, 0); // Negro
+            pdf.setTextColor(18, 18, 18);
+            pdf.text(teamLeader || 'No especificado', margin + 5, 51);
+            pdf.text(formattedSalida, margin + 95, 51);
+            pdf.text(formattedRegreso, margin + 135, 51);
             
-            // Encabezado de tabla
-            checkPageBreak(lineHeight * 2);
-            pdf.setFillColor(0, 85, 164); // Gran Retto Blue
-            pdf.setTextColor(255, 255, 255); // Blanco
-            pdf.rect(margin, yPos, pageWidth - margin * 2, lineHeight * 1.5, 'F');
-            pdf.text('Item', margin + 2, yPos + lineHeight / 1.5);
-            pdf.text('Cantidad', pageWidth - margin - 30, yPos + lineHeight / 1.5, { align: 'right' });
-            pdf.text('Salida', pageWidth - margin - 15, yPos + lineHeight / 1.5, { align: 'center' });
-            pdf.text('Regreso', pageWidth - margin, yPos + lineHeight / 1.5, { align: 'center' });
-            yPos += lineHeight * 1.5;
+            // --- TABLA DE ARTÍCULOS ---
+            yPos = 68;
+            drawTableHeader(yPos);
+            yPos += 8;
             
-            // Items
-            pdf.setTextColor(0, 0, 0); // Negro
             const items = Object.values(eventList.items || {});
             
+            pdf.setFontSize(9);
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                checkPageBreak(lineHeight * 1.5);
+                checkPageBreak(8); // Cada fila ocupa 8mm
                 
-                // Alternar color de fondo
+                // Color de fondo alterno para legibilidad
                 if (i % 2 === 0) {
-                    pdf.setFillColor(245, 245, 245); // Gris claro
-                    pdf.rect(margin, yPos, pageWidth - margin * 2, lineHeight * 1.5, 'F');
+                    pdf.setFillColor(248, 250, 252);
+                } else {
+                    pdf.setFillColor(255, 255, 255);
+                }
+                pdf.rect(margin, yPos, pageWidth - margin * 2, 8, 'F');
+                
+                // Línea inferior de la fila
+                pdf.setDrawColor(241, 245, 249);
+                pdf.setLineWidth(0.2);
+                pdf.line(margin, yPos + 8, pageWidth - margin, yPos + 8);
+                
+                // Nombre del artículo
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(18, 18, 18);
+                pdf.text(item.nombre, margin + 3, yPos + 5.5);
+                
+                // Tipo de artículo (color-coded)
+                if (item.esConsumible) {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(239, 51, 64); // Rojo para consumibles
+                    pdf.text('Consumible', margin + 85, yPos + 5.5);
+                } else {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(0, 85, 164); // Azul para retornables
+                    pdf.text('Retornable', margin + 85, yPos + 5.5);
                 }
                 
-                pdf.text(item.nombre, margin + 2, yPos + lineHeight / 1.5);
-                pdf.text(item.cantidad.toString(), pageWidth - margin - 30, yPos + lineHeight / 1.5, { align: 'right' });
+                // Cantidad
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(18, 18, 18);
+                pdf.text(item.cantidad.toString(), margin + 125, yPos + 5.5, { align: 'right' });
                 
-                // Cuadros para marcar salida y regreso
-                pdf.rect(pageWidth - margin - 15, yPos + 2, 10, 10);
-                pdf.rect(pageWidth - margin, yPos + 2, 10, 10);
+                // Dibujar Checkbox de Salida
+                pdf.setDrawColor(160, 174, 192); // Color de borde gris
+                pdf.setLineWidth(0.3);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin + 138, yPos + 2, 4, 4); // Centrado en X=160 (138 a 142)
                 
-                yPos += lineHeight * 1.5;
+                // Dibujar Checkbox de Retorno
+                if (item.esConsumible) {
+                    // Los consumibles no retornan: dibujamos un indicador de No Aplica
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(7.5);
+                    pdf.setTextColor(160, 174, 192); // Gris claro
+                    pdf.text('N/A', margin + 160, yPos + 5, { align: 'center' });
+                    pdf.setFontSize(9); // Restaurar tamaño
+                } else {
+                    pdf.rect(margin + 158, yPos + 2, 4, 4); // Centrado en X=180 (158 a 162)
+                }
+                
+                yPos += 8;
             }
             
-            // Observaciones al final
-            checkPageBreak(lineHeight * 8);
-            yPos += lineHeight;
+            // --- SECCIÓN DE OBSERVACIONES ---
+            checkPageBreak(35); // Necesitamos 35mm para observaciones de forma segura
             
-            pdf.setFontSize(14);
-            pdf.setTextColor(0, 85, 164); // Gran Retto Blue
-            pdf.text('Observaciones', margin, yPos);
-            yPos += lineHeight;
+            yPos += 6;
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(11);
+            pdf.setTextColor(0, 85, 164);
+            pdf.text('OBSERVACIONES GENERALES', margin, yPos);
             
-            pdf.setFontSize(10);
-            pdf.setTextColor(0, 0, 0); // Negro
-            pdf.rect(margin, yPos, pageWidth - margin * 2, lineHeight * 6);
-            yPos += lineHeight * 6;
+            yPos += 3;
+            pdf.setDrawColor(203, 213, 224);
+            pdf.setFillColor(250, 252, 254);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(margin, yPos, pageWidth - margin * 2, 22, 2, 2, 'FD');
             
-            // Pie de página
-            checkPageBreak(lineHeight * 2);
-            pdf.setFontSize(8);
-            pdf.setTextColor(117, 117, 117); // Gris oscuro
-            pdf.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, yPos);
-            pdf.text('Sistema de Inventarios GranRetto', pageWidth - margin, yPos, { align: 'right' });
+            // Imprimir el pie de página de la página final
+            drawFooter(pageNum);
             
             // Guardar PDF
             pdf.save(`Lista_Evento_${eventName.replace(/ /g, '_')}.pdf`);
